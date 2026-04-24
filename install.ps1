@@ -6,7 +6,7 @@
     Installs ComfyUI + custom nodes, F5-TTS, RVC, FluxGym and all Python deps.
     Does NOT download ML models (see download_models.py, ~60 GB).
 .PARAMETER BasePath
-    Root folder for all installations. Default: C:\ai-ofm
+    Root folder for all installations. Default: D:\GitHub\ai-ofm
 .EXAMPLE
     .\install.ps1
     .\install.ps1 -BasePath D:\AI
@@ -14,7 +14,7 @@
 #>
 
 param(
-    [string]$BasePath = "C:\ai-ofm",
+    [string]$BasePath = "D:\GitHub\ai-ofm",
     [switch]$SkipComfyUI,
     [switch]$SkipF5TTS,
     [switch]$SkipRVC,

@@ -6,7 +6,7 @@ from pathlib import Path
 
 # ============ ПУТИ ============
 # ComfyUI должен быть установлен отдельно. Укажи путь:
-COMFYUI_ROOT = Path(r"C:\ComfyUI")          # Windows
+COMFYUI_ROOT = Path(r"D:\GitHub\OFM\ai-ofm\ComfyUI")          # Windows
 # COMFYUI_ROOT = Path.home() / "ComfyUI"    # Linux
 
 COMFYUI_URL = "http://127.0.0.1:8188"       # стандартный порт
@@ -133,8 +133,8 @@ class RifeSettings:
 # Стратегия: перед запуском TTS выгружаем ComfyUI из VRAM (free_memory).
 
 # Пути к установкам (поставь отдельно — см. MODELS_CHECKLIST.md)
-F5_TTS_ROOT = Path(r"C:\F5-TTS")                # git clone SWivid/F5-TTS
-RVC_ROOT = Path(r"C:\RVC")                      # git clone RVC-Project/...
+F5_TTS_ROOT = Path(r"D:\GitHub\OFM\ai-ofm\F5-TTS")                # git clone SWivid/F5-TTS
+RVC_ROOT = Path(r"D:\GitHub\OFM\ai-ofm\RVC")                   # git clone RVC-Project/...
 
 # --- F5-TTS ---
 class F5Settings:
@@ -172,7 +172,7 @@ class RVCSettings:
 
 
 # ============ FluxGym (тренировка LoRA персонажа) ============
-FLUXGYM_ROOT = Path(r"C:\fluxgym")              # git clone cocktailpeanut/fluxgym
+FLUXGYM_ROOT = Path(r"D:\GitHub\OFM\ai-ofm\fluxgym")            # git clone cocktailpeanut/fluxgym
 
 class FluxGymSettings:
     """
