@@ -23,13 +23,13 @@ for d in (OUTPUT_DIR, INPUT_DIR):
 # ============ МОДЕЛИ (имена файлов, как ComfyUI их видит) ============
 
 # --- Flux линия (персонаж) ---
-FLUX_UNET_GGUF = "flux1-dev-Q5_K_M.gguf"            # ~8 GB, оптимум для 12 GB
+FLUX_UNET_GGUF = "flux1-dev-Q5_K_S.gguf"            # ~8 GB, оптимум для 12 GB
 FLUX_CLIP_L = "clip_l.safetensors"
 FLUX_T5 = "t5xxl_fp8_e4m3fn.safetensors"            # FP8 чтобы влезть с PuLID
 FLUX_VAE = "ae.safetensors"
 
 # Flux Kontext Dev (edit-based генерация)
-FLUX_KONTEXT_GGUF = "flux1-kontext-dev-Q5_K_M.gguf"   # city96/FLUX.1-Kontext-dev-gguf
+FLUX_KONTEXT_GGUF = "flux1-kontext-dev-Q5_K_S.gguf"   # city96/FLUX.1-Kontext-dev-gguf
 
 # PuLID-Flux II (face consistency)
 PULID_MODEL = "pulid_flux_v0.9.1.safetensors"
@@ -52,7 +52,7 @@ WAN_LIGHTNING_HIGH = "wan2.2_i2v_lightning_4steps_high_noise_v1.1.safetensors"
 WAN_LIGHTNING_LOW = "wan2.2_i2v_lightning_4steps_low_noise_v1.1.safetensors"
 
 # --- SeedVR2 (апскейл видео) ---
-SEEDVR2_MODEL = "seedvr2_ema_7b_fp8_e4m3fn_mixed_block35_fp16.safetensors"
+SEEDVR2_MODEL  = "seedvr2_ema_7b_fp8_e4m3fn.safetensors" 
 
 # ============ ПАРАМЕТРЫ ГЕНЕРАЦИИ под 4070S ============
 
