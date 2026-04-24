@@ -1,0 +1,49 @@
+{
+  "_comment": "RIFE v4.25 — интерполяция fps. 24 → 48/60 для плавности AI-видео.",
+  "_uses": "ComfyUI-Frame-Interpolation (Fannovel16) + VideoHelperSuite",
+  "_placeholders": "{{INPUT_VIDEO}}, {{MULTIPLIER}}, {{OUTPUT_FPS}}",
+
+  "1": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "{{INPUT_VIDEO}}",
+      "force_rate": 0,
+      "force_size": "Disabled",
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 0,
+      "skip_first_frames": 0,
+      "select_every_nth": 1
+    }
+  },
+
+  "2": {
+    "class_type": "RIFE VFI",
+    "inputs": {
+      "frames": ["1", 0],
+      "ckpt_name": "rife47.pth",
+      "clear_cache_after_n_frames": 10,
+      "multiplier": "{{MULTIPLIER}}",
+      "fast_mode": true,
+      "ensemble": true,
+      "scale_factor": 1.0
+    },
+    "_note": "multiplier 2 = удвоение fps (24→48), multiplier 3 = 24→72. rife47 = v4.7; актуальная v4.25 в некоторых билдах"
+  },
+
+  "3": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": ["2", 0],
+      "frame_rate": "{{OUTPUT_FPS}}",
+      "loop_count": 0,
+      "filename_prefix": "ai_ofm/interpolated",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 18,
+      "save_metadata": true,
+      "pingpong": false,
+      "save_output": true
+    }
+  }
+}

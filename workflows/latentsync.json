@@ -1,0 +1,57 @@
+{
+  "_comment": "LatentSync 1.6 — audio-driven lip sync для готового видео. Требует 25 fps + фронтальное лицо.",
+  "_uses": "ComfyUI-LatentSyncWrapper (ShmuelRonen) + VideoHelperSuite",
+  "_placeholders": "{{INPUT_VIDEO}}, {{INPUT_AUDIO}}, {{SEED}}, {{STEPS}}, {{GUIDANCE}}, {{LIPS_EXPRESSION}}",
+  "_note": "LatentSync работает только на 25 fps. Перед подачей видео будет конвертировано.",
+
+  "1": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "{{INPUT_VIDEO}}",
+      "force_rate": 25,
+      "force_size": "Disabled",
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 0,
+      "skip_first_frames": 0,
+      "select_every_nth": 1
+    },
+    "_note": "force_rate=25 — LatentSync требует ровно 25 fps"
+  },
+
+  "2": {
+    "class_type": "VHS_LoadAudio",
+    "inputs": {
+      "audio_file": "{{INPUT_AUDIO}}"
+    }
+  },
+
+  "3": {
+    "class_type": "LatentSyncNode",
+    "inputs": {
+      "images": ["1", 0],
+      "audio": ["2", 0],
+      "seed": "{{SEED}}",
+      "lips_expression": "{{LIPS_EXPRESSION}}",
+      "inference_steps": "{{STEPS}}"
+    },
+    "_note": "LatentSync 1.6: 512x512 лицо, inference_steps 20-50, lips_expression 1.5-2.5 для обычной речи, 2.0-3.0 для эмоций"
+  },
+
+  "4": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": ["3", 0],
+      "audio": ["2", 0],
+      "frame_rate": 25,
+      "loop_count": 0,
+      "filename_prefix": "ai_ofm/lipsync",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 18,
+      "save_metadata": true,
+      "pingpong": false,
+      "save_output": true
+    }
+  }
+}

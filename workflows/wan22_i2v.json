@@ -1,0 +1,216 @@
+{
+  "_comment": "Wan 2.2 I2V 14B Q4_K_M + Lightning 4+4 + SageAttention + BlockSwap 25 + TeaCache",
+  "_uses": "ComfyUI-WanVideoWrapper by Kijai + ComfyUI-GGUF",
+  "_placeholders": "{{START_IMAGE}}, {{POSITIVE}}, {{NEGATIVE}}, {{WIDTH}}, {{HEIGHT}}, {{FRAMES}}, {{SEED}}, {{BLOCKS_SWAP}}, {{STEPS_HIGH}}, {{STEPS_LOW}}, {{TEACACHE_THRESH}}",
+
+  "1": {
+    "class_type": "WanVideoModelLoader",
+    "inputs": {
+      "model": "{{WAN_HIGH}}",
+      "base_precision": "fp16",
+      "quantization": "disabled",
+      "load_device": "offload_device",
+      "attention_mode": "sageattn",
+      "compile_args": null,
+      "block_swap_args": {
+        "blocks_to_swap": "{{BLOCKS_SWAP}}",
+        "offload_txt_emb": true,
+        "offload_img_emb": true
+      },
+      "lora": null
+    },
+    "_note": "high-noise эксперт, используется на первой половине denoise"
+  },
+  "2": {
+    "class_type": "WanVideoModelLoader",
+    "inputs": {
+      "model": "{{WAN_LOW}}",
+      "base_precision": "fp16",
+      "quantization": "disabled",
+      "load_device": "offload_device",
+      "attention_mode": "sageattn",
+      "compile_args": null,
+      "block_swap_args": {
+        "blocks_to_swap": "{{BLOCKS_SWAP}}",
+        "offload_txt_emb": true,
+        "offload_img_emb": true
+      },
+      "lora": null
+    }
+  },
+
+  "3": {
+    "class_type": "WanVideoLoraSelect",
+    "inputs": {
+      "lora": "{{LIGHTNING_HIGH}}",
+      "strength": 1.0,
+      "prev_lora": null,
+      "blocks": null
+    }
+  },
+  "4": {
+    "class_type": "WanVideoLoraSelect",
+    "inputs": {
+      "lora": "{{LIGHTNING_LOW}}",
+      "strength": 1.0,
+      "prev_lora": null,
+      "blocks": null
+    }
+  },
+
+  "5": {
+    "class_type": "WanVideoVAELoader",
+    "inputs": {
+      "model_name": "{{WAN_VAE}}",
+      "precision": "fp16"
+    }
+  },
+  "6": {
+    "class_type": "LoadWanVideoT5TextEncoder",
+    "inputs": {
+      "model_name": "{{WAN_T5}}",
+      "precision": "fp8_e4m3fn",
+      "load_device": "offload_device",
+      "quantization": "disabled"
+    }
+  },
+  "7": {
+    "class_type": "LoadWanVideoClipTextEncoder",
+    "inputs": {
+      "model_name": "{{WAN_CLIP_VISION}}",
+      "precision": "fp16",
+      "load_device": "offload_device"
+    }
+  },
+
+  "10": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "{{START_IMAGE}}"
+    }
+  },
+  "11": {
+    "class_type": "WanVideoImageToVideoEncode",
+    "inputs": {
+      "image": ["10", 0],
+      "vae": ["5", 0],
+      "width": "{{WIDTH}}",
+      "height": "{{HEIGHT}}",
+      "num_frames": "{{FRAMES}}",
+      "noise_aug_strength": 0.0,
+      "start_latent_strength": 1.0,
+      "end_latent_strength": 1.0,
+      "force_offload": true,
+      "clip_embeds": ["13", 0]
+    }
+  },
+  "12": {
+    "class_type": "WanVideoTextEncode",
+    "inputs": {
+      "positive_prompt": "{{POSITIVE}}",
+      "negative_prompt": "{{NEGATIVE}}",
+      "t5": ["6", 0],
+      "force_offload": true
+    }
+  },
+  "13": {
+    "class_type": "WanVideoClipVisionEncode",
+    "inputs": {
+      "clip_vision": ["7", 0],
+      "image": ["10", 0]
+    }
+  },
+
+  "20": {
+    "class_type": "WanVideoTeaCache",
+    "inputs": {
+      "rel_l1_thresh": "{{TEACACHE_THRESH}}",
+      "start_step": 1,
+      "end_step": -1,
+      "cache_device": "offload_device"
+    }
+  },
+
+  "30": {
+    "class_type": "WanVideoLoraLoad",
+    "inputs": {
+      "model": ["1", 0],
+      "lora": ["3", 0]
+    }
+  },
+  "31": {
+    "class_type": "WanVideoLoraLoad",
+    "inputs": {
+      "model": ["2", 0],
+      "lora": ["4", 0]
+    }
+  },
+
+  "40": {
+    "class_type": "WanVideoSampler",
+    "inputs": {
+      "model": ["30", 0],
+      "image_embeds": ["11", 0],
+      "text_embeds": ["12", 0],
+      "steps": "{{STEPS_HIGH}}",
+      "cfg": 1.0,
+      "shift": 5.0,
+      "seed": "{{SEED}}",
+      "scheduler": "lcm",
+      "force_offload": true,
+      "teacache_args": ["20", 0],
+      "denoise_strength": 1.0,
+      "start_step": 0,
+      "end_step": "{{STEPS_HIGH}}"
+    },
+    "_note": "стадия high-noise: 0 → STEPS_HIGH"
+  },
+  "41": {
+    "class_type": "WanVideoSampler",
+    "inputs": {
+      "model": ["31", 0],
+      "image_embeds": ["11", 0],
+      "text_embeds": ["12", 0],
+      "steps": "{{STEPS_TOTAL}}",
+      "cfg": 1.0,
+      "shift": 5.0,
+      "seed": "{{SEED}}",
+      "scheduler": "lcm",
+      "force_offload": true,
+      "teacache_args": ["20", 0],
+      "samples": ["40", 0],
+      "denoise_strength": 1.0,
+      "start_step": "{{STEPS_HIGH}}",
+      "end_step": "{{STEPS_TOTAL}}"
+    },
+    "_note": "стадия low-noise: продолжает с latent от 40"
+  },
+
+  "50": {
+    "class_type": "WanVideoDecode",
+    "inputs": {
+      "samples": ["41", 0],
+      "vae": ["5", 0],
+      "enable_vae_tiling": true,
+      "tile_x": 272,
+      "tile_y": 272,
+      "tile_stride_x": 144,
+      "tile_stride_y": 128
+    }
+  },
+  "60": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": ["50", 0],
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "ai_ofm/i2v",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "pingpong": false,
+      "save_output": true
+    }
+  }
+}

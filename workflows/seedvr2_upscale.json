@@ -1,0 +1,61 @@
+{
+  "_comment": "SeedVR2 7B FP8 + BlockSwap 12 — апскейл видео x2 с temporal consistency",
+  "_uses": "ComfyUI-SeedVR2_VideoUpscaler by numz + VideoHelperSuite",
+  "_placeholders": "{{INPUT_VIDEO}}, {{UPSCALE}}, {{BATCH}}, {{BLOCKS_SWAP}}, {{SEED}}, {{SEEDVR2_MODEL}}",
+
+  "1": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "{{INPUT_VIDEO}}",
+      "force_rate": 0,
+      "force_size": "Disabled",
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 0,
+      "skip_first_frames": 0,
+      "select_every_nth": 1
+    }
+  },
+
+  "2": {
+    "class_type": "SeedVR2BlockSwapConfig",
+    "inputs": {
+      "blocks_to_swap": "{{BLOCKS_SWAP}}",
+      "offload_io_components": true,
+      "cache_model": false,
+      "use_non_blocking": true,
+      "enable_debug": false
+    }
+  },
+
+  "3": {
+    "class_type": "SeedVR2VideoUpscaler",
+    "inputs": {
+      "images": ["1", 0],
+      "model": "{{SEEDVR2_MODEL}}",
+      "seed": "{{SEED}}",
+      "new_resolution": "{{UPSCALE}}",
+      "batch_size": "{{BATCH}}",
+      "preserve_vram": true,
+      "tiled_vae": true,
+      "cfg_scale": 1.0,
+      "block_swap_config": ["2", 0]
+    }
+  },
+
+  "4": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": ["3", 0],
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "ai_ofm/upscaled",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 18,
+      "save_metadata": true,
+      "pingpong": false,
+      "save_output": true
+    }
+  }
+}
