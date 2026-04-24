@@ -1,0 +1,228 @@
+# ============================================================
+# AI OFM Studio — .gitignore
+# ============================================================
+
+# ------- Python venv (любые варианты названий) -------
+venv/
+venv-*/
+.venv/
+env/
+.env/
+ENV/
+virtualenv/
+py311/
+py312/
+
+# ------- Python runtime -------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.Python
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.manifest
+*.spec
+MANIFEST
+
+# ------- Тесты / инструменты -------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+
+# ------- Ноутбуки -------
+.ipynb_checkpoints/
+*.ipynb
+
+# ============================================================
+# Специфика AI OFM Studio
+# ============================================================
+
+# ------- Сгенерированные артефакты (их НЕ коммитим) -------
+output/
+outputs/
+input/
+runs/
+temp/
+tmp/
+
+# ------- Датасеты LoRA -------
+lora_datasets/
+datasets/
+
+# ------- Логи и батчи -------
+*.log
+batch_log.json
+batches/
+logs/
+
+# ------- ML-модели (слишком большие для git) -------
+*.safetensors
+*.gguf
+*.ckpt
+*.pth
+*.bin
+*.onnx
+*.pt
+*.pkl
+*.index
+models/
+checkpoints/
+ckpts/
+
+# ------- Медиа-файлы -------
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.webm
+*.gif
+*.mp3
+*.wav
+*.ogg
+*.flac
+*.m4a
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.bmp
+*.tiff
+# Исключения — оставляем иконки и примеры документации
+!docs/**/*.png
+!docs/**/*.jpg
+!assets/**/*.png
+!assets/**/*.jpg
+
+# ------- CSV с данными пользователя -------
+batch_*.csv
+my_*.csv
+# Но шаблон коммитим
+!batch_template.csv
+
+# ------- Конфиги с приватными данными -------
+config.local.py
+secrets.py
+.env.local
+*.secret
+
+# ============================================================
+# IDE / редакторы
+# ============================================================
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains (PyCharm и т.п.)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.*.sw?
+
+# Emacs
+\#*\#
+.\#*
+
+# ============================================================
+# Операционные системы
+# ============================================================
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd/
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+# ============================================================
+# Инсталляции других проектов (если случайно клонировал внутрь)
+# ============================================================
+ComfyUI/
+F5-TTS/
+RVC/
+fluxgym/
+Mangio-RVC-Fork/
+
+# ============================================================
+# HuggingFace / Gradio кэши
+# ============================================================
+.cache/
+.huggingface/
+huggingface/
+gradio_cached_examples/
+flagged/
+
+# ============================================================
+# Архивы и сборки
+# ============================================================
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+# Исключение — если хочешь шарить готовый архив проекта
+!ai_ofm_studio.zip
+
+# ============================================================
+# Референсные материалы пользователя (приватное)
+# ============================================================
+# Типичная структура: refs/ с фото лиц и аудио для клонирования
+refs/
+references/
+voice_samples/
+face_refs/
+my_*.jpg
+my_*.png
+my_*.wav
+
