@@ -161,7 +161,18 @@ if (-not $SkipComfyUI) {
         $reqFile = Join-Path $name "requirements.txt"
         if (Test-Path $reqFile) {
             Write-Host "    installing deps for $name" -ForegroundColor DarkGray
-            pip install -r $reqFile 2>&1 | Out-Null
+            try {
+                $savedPref = $ErrorActionPreference
+                $ErrorActionPreference = "Continue"
+                pip install -r $reqFile 2>&1 | Out-String | Out-Null
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "    [WARN] $name deps failed, continuing" -ForegroundColor Yellow
+                }
+            } catch {
+                Write-Host "    [WARN] ${name}: $_" -ForegroundColor Yellow
+            } finally {
+                $ErrorActionPreference = $savedPref
+            }
         }
     }
 
