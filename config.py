@@ -57,7 +57,7 @@ SEEDVR2_MODEL = "seedvr2_ema_7b_fp8_e4m3fn_mixed_block35_fp16.safetensors"
 # ============ ПАРАМЕТРЫ ГЕНЕРАЦИИ под 4070S ============
 
 class FluxSettings:
-    """Flux.1-dev Q5_K_M + PuLID на 12 GB VRAM"""
+    """Flux.1-dev Q5_K_S + PuLID на 12 GB VRAM"""
     width = 1024
     height = 1024
     steps = 20
