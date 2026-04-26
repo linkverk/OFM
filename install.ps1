@@ -179,7 +179,8 @@ if (-not $SkipComfyUI) {
         "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git",
         "https://github.com/rgthree/rgthree-comfy.git",
         "https://github.com/ShmuelRonen/ComfyUI-LatentSyncWrapper.git",
-        "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation.git"
+        "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation.git",
+        "https://github.com/manuelplapper/ComfyUI-CodeFormer.git"
     )
 
     foreach ($repo in $customNodes) {
@@ -227,7 +228,7 @@ if (-not $SkipComfyUI) {
     }
 
     deactivate
-    Write-Host "[OK] ComfyUI + 12 custom nodes installed at $comfyPath"
+    Write-Host "[OK] ComfyUI + 13 custom nodes installed at $comfyPath"
 } else {
     Write-Host "[SKIP] ComfyUI skipped" -ForegroundColor Yellow
 }

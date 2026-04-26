@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:gist.github.com)",
+      "Bash(python download_models.py --list QuantStack/FLUX.1-Kontext-dev-GGUF)",
+      "Bash(PYTHONIOENCODING=utf-8 python download_models.py --list QuantStack/FLUX.1-Kontext-dev-GGUF)",
+      "Bash(python -c \"import json; json.load\\(open\\('workflows/wan22_i2v.json'\\)\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import json; json.load\\(open\\('workflows/wan22_i2v.json', encoding='utf-8'\\)\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import json, ast; json.load\\(open\\('workflows/flux_pulid.json', encoding='utf-8'\\)\\); ast.parse\\(open\\('pipeline/character_gen.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK both'\\)\")"
+    ]
+  }
+}

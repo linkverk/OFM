@@ -12,6 +12,7 @@ from config import (
     FLUX_T5,
     FLUX_VAE,
     PULID_MODEL,
+    CODEFORMER_MODEL,
     FluxSettings,
 )
 from utils.comfy_client import ComfyClient
@@ -73,6 +74,8 @@ def generate_character(
             "T5": FLUX_T5,
             "VAE": FLUX_VAE,
             "PULID": PULID_MODEL,
+            "CODEFORMER": CODEFORMER_MODEL,
+            "CODEFORMER_FIDELITY": FluxSettings.codeformer_fidelity,
             "FACE_IMAGE": face_name,
             "POSITIVE": full_prompt,
             "NEGATIVE": neg,

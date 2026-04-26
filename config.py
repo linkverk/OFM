@@ -29,7 +29,7 @@ FLUX_T5 = "t5xxl_fp8_e4m3fn.safetensors"            # FP8 чтобы влезт�
 FLUX_VAE = "ae.safetensors"
 
 # Flux Kontext Dev (edit-based генерация)
-FLUX_KONTEXT_GGUF = "flux1-kontext-dev-Q5_K_S.gguf"   # city96/FLUX.1-Kontext-dev-gguf
+FLUX_KONTEXT_GGUF = "flux1-kontext-dev-Q5_K_M.gguf"   # QuantStack/FLUX.1-Kontext-dev-GGUF (Q5_K_M существует, оптимум)
 
 # PuLID-Flux II (face consistency)
 PULID_MODEL = "pulid_flux_v0.9.1.safetensors"

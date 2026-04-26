@@ -185,6 +185,9 @@ def _try(failures: list, label: str, fn, *args, **kwargs):
 
 
 def main():
+    # На Windows-консоли (cp1252) print() с кириллицей валится. Принудительно UTF-8.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Скачивание всех моделей для AI OFM Studio")
     parser.add_argument("--comfyui", default=None, help="путь к ComfyUI")
     parser.add_argument("--f5tts", default=None, help="путь к F5-TTS")

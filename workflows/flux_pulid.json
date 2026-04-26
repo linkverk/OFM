@@ -1,7 +1,8 @@
 {
   "_comment": "Flux.1-dev Q5 GGUF + PuLID-Flux II + FaceDetailer + CodeFormer",
-  "_comment_placeholders": "{{POSITIVE}}, {{NEGATIVE}}, {{FACE_IMAGE}}, {{WIDTH}}, {{HEIGHT}}, {{SEED}}, {{STEPS}}, {{GUIDANCE}}, {{PULID_WEIGHT}}, {{FLUX_UNET}}, {{CLIP_L}}, {{T5}}, {{VAE}}, {{PULID}}",
+  "_comment_placeholders": "{{POSITIVE}}, {{NEGATIVE}}, {{FACE_IMAGE}}, {{WIDTH}}, {{HEIGHT}}, {{SEED}}, {{STEPS}}, {{GUIDANCE}}, {{PULID_WEIGHT}}, {{FLUX_UNET}}, {{CLIP_L}}, {{T5}}, {{VAE}}, {{PULID}}, {{CODEFORMER}}, {{CODEFORMER_FIDELITY}}",
   "_note_clip": "DualCLIPLoader (не GGUF) — потому что T5 у нас t5xxl_fp8_e4m3fn.safetensors, а не GGUF. Для GGUF T5 (например t5-v1_1-xxl-Q5_K_M.gguf) надо ставить DualCLIPLoaderGGUF.",
+  "_note_codeformer": "Узлы 42-43 рассчитаны на manuelplapper/ComfyUI-CodeFormer (классы CodeFormerLoader + CodeFormer). Если стоит другой fork — могут не совпасть имена классов/инпутов.",
 
   "1": {
     "class_type": "UnetLoaderGGUF",
@@ -156,10 +157,26 @@
     }
   },
 
+  "42": {
+    "class_type": "CodeFormerLoader",
+    "inputs": {
+      "model_name": "{{CODEFORMER}}"
+    }
+  },
+  "43": {
+    "class_type": "CodeFormer",
+    "inputs": {
+      "image": ["41", 0],
+      "codeformer_model": ["42", 0],
+      "fidelity": "{{CODEFORMER_FIDELITY}}"
+    },
+    "_note": "fidelity 0.0 = максимум реставрации (теряет похожесть), 1.0 = максимум похожести (хуже качество). Дефолт config.py 0.6."
+  },
+
   "50": {
     "class_type": "SaveImage",
     "inputs": {
-      "images": ["41", 0],
+      "images": ["43", 0],
       "filename_prefix": "ai_ofm/character"
     }
   }
