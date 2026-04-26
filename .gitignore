@@ -193,6 +193,7 @@ F5-TTS/
 RVC/
 fluxgym/
 Mangio-RVC-Fork/
+claude-memory-compiler/
 
 # ============================================================
 # HuggingFace / Gradio кэши
