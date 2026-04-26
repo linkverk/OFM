@@ -194,6 +194,7 @@ RVC/
 fluxgym/
 Mangio-RVC-Fork/
 claude-memory-compiler/
+.obsidian/
 
 # ============================================================
 # HuggingFace / Gradio кэши
