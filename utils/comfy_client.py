@@ -39,8 +39,52 @@ class ComfyClient:
             data=json.dumps(data).encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read())
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            # ComfyUI возвращает структурированный JSON при валидационных ошибках.
+            # Без чтения body urllib даёт только "HTTP Error 400: Bad Request" — бесполезно.
+            body = e.read().decode("utf-8", errors="replace")
+            self._print_comfy_error(e.code, body)
+            raise
+
+    @staticmethod
+    def _print_comfy_error(code: int, body: str) -> None:
+        """Красиво печатает ошибку валидации workflow от ComfyUI."""
+        try:
+            err = json.loads(body)
+        except json.JSONDecodeError:
+            print(f"\n[comfy] HTTP {code} (non-JSON body):\n{body[:2000]}")
+            return
+
+        print(f"\n[comfy] HTTP {code} — workflow отвергнут ComfyUI")
+
+        # Корневая ошибка (например missing_node_type)
+        root = err.get("error")
+        if isinstance(root, dict):
+            msg = root.get("message", "?")
+            details = root.get("details", "")
+            print(f"  error: {msg}")
+            if details:
+                print(f"    details: {details}")
+
+        # Ошибки конкретных нод
+        node_errors = err.get("node_errors") or {}
+        for node_id, info in node_errors.items():
+            cls = info.get("class_type", "?")
+            print(f"  нода #{node_id} ({cls}):")
+            for e in info.get("errors", []):
+                etype = e.get("type", "?")
+                emsg = e.get("message", "")
+                edet = e.get("details", "")
+                print(f"    - [{etype}] {emsg}")
+                if edet:
+                    print(f"      details: {edet}")
+
+        if not node_errors and not isinstance(root, dict):
+            # Ничего структурированного не нашли — печатаем сырое тело
+            print(body[:2000])
 
     def _get_json(self, path: str) -> dict:
         with urllib.request.urlopen(f"{self.server}{path}", timeout=30) as resp:

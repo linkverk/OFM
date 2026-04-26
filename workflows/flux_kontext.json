@@ -2,6 +2,7 @@
   "_comment": "Flux Kontext Dev Q5 GGUF — редактирует эталонный кадр по текстовому промпту",
   "_uses": "ComfyUI-GGUF + нативные ноды ComfyUI Kontext (в ядре с августа 2025)",
   "_placeholders": "{{KONTEXT_UNET}}, {{CLIP_L}}, {{T5}}, {{VAE}}, {{REF_IMAGE}}, {{EDIT_PROMPT}}, {{WIDTH}}, {{HEIGHT}}, {{STEPS}}, {{GUIDANCE}}, {{SEED}}",
+  "_note_clip": "DualCLIPLoader (не GGUF) — т.к. T5 у нас .safetensors, не .gguf",
 
   "1": {
     "class_type": "UnetLoaderGGUF",
@@ -10,7 +11,7 @@
     }
   },
   "2": {
-    "class_type": "DualCLIPLoaderGGUF",
+    "class_type": "DualCLIPLoader",
     "inputs": {
       "clip_name1": "{{T5}}",
       "clip_name2": "{{CLIP_L}}",

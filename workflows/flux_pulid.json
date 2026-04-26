@@ -1,6 +1,7 @@
 {
-  "_comment": "Flux.1-dev Q5_K_M GGUF + PuLID-Flux II + FaceDetailer + CodeFormer",
+  "_comment": "Flux.1-dev Q5 GGUF + PuLID-Flux II + FaceDetailer + CodeFormer",
   "_comment_placeholders": "{{POSITIVE}}, {{NEGATIVE}}, {{FACE_IMAGE}}, {{WIDTH}}, {{HEIGHT}}, {{SEED}}, {{STEPS}}, {{GUIDANCE}}, {{PULID_WEIGHT}}, {{FLUX_UNET}}, {{CLIP_L}}, {{T5}}, {{VAE}}, {{PULID}}",
+  "_note_clip": "DualCLIPLoader (не GGUF) — потому что T5 у нас t5xxl_fp8_e4m3fn.safetensors, а не GGUF. Для GGUF T5 (например t5-v1_1-xxl-Q5_K_M.gguf) надо ставить DualCLIPLoaderGGUF.",
 
   "1": {
     "class_type": "UnetLoaderGGUF",
@@ -9,13 +10,12 @@
     }
   },
   "2": {
-    "class_type": "DualCLIPLoaderGGUF",
+    "class_type": "DualCLIPLoader",
     "inputs": {
       "clip_name1": "{{T5}}",
       "clip_name2": "{{CLIP_L}}",
       "type": "flux"
-    },
-    "_note": "если T5 не GGUF а safetensors — замени на DualCLIPLoader"
+    }
   },
   "3": {
     "class_type": "VAELoader",
