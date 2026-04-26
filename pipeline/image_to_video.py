@@ -75,13 +75,13 @@ def image_to_video(
         "STEPS_HIGH": WanSettings.steps_high,
         "STEPS_LOW": WanSettings.steps_low,
         "STEPS_TOTAL": total_steps,
-        "TEACACHE_THRESH": WanSettings.teacache_threshold,
+        # TEACACHE_THRESH удалён — workflow больше не использует TeaCache
     }
     wf = fill_placeholders(wf_template, values)
 
     print(f"[i2v] Wan 2.2 + Lightning {WanSettings.steps_high}+{WanSettings.steps_low}, "
           f"{WanSettings.width}x{WanSettings.height}, {num_frames} кадров, seed={used_seed}")
-    print(f"[i2v] ожидаемое время на 4070S: 3-5 минут...")
+    print(f"[i2v] ожидаемое время на 4070S: 4-6 минут (без TeaCache)...")
 
     # Перед тяжёлой задачей — принудительная выгрузка
     client.free_memory(unload_models=True, free_memory=True)

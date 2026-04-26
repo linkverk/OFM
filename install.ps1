@@ -128,12 +128,45 @@ if (-not $SkipComfyUI) {
     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
     pip install -r requirements.txt
 
+    # ----- Pin NumPy 1.x BEFORE installing custom_nodes -----
+    # insightface 0.7.3 (используется PuLID) собран под NumPy 1.x ABI.
+    # NumPy 2 ломает его cython-extension mesh_core_cython:
+    #   ValueError: numpy.dtype size changed, may indicate binary incompatibility.
+    # Закрепляем до клонирования нод, чтобы их requirements.txt не подтянули NumPy 2.
+    Write-Host "[INFO] Pinning numpy<2 (insightface ABI compat)" -ForegroundColor Cyan
+    pip install "numpy<2" --force-reinstall
+
+    # ----- Prebuilt insightface wheel for Windows -----
+    # На Windows + Python 3.12 PyPI insightface не собирается без MSVC build tools.
+    # Берём prebuilt wheel из Gourieff/Assets, fallback на PyPI если ABI не подошёл.
+    $pyAbi = (python -c "import sys; print(f'cp{sys.version_info.major}{sys.version_info.minor}')" | Out-String).Trim()
+    $insightUrl = "https://github.com/Gourieff/Assets/raw/main/Insightface/insightface-0.7.3-$pyAbi-$pyAbi-win_amd64.whl"
+    Write-Host "[INFO] Installing insightface (prebuilt $pyAbi wheel)" -ForegroundColor Cyan
+    try {
+        $savedPref = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        pip install $insightUrl 2>&1 | Out-String | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "[WARN] Prebuilt insightface wheel failed, trying PyPI" -ForegroundColor Yellow
+            pip install insightface
+        }
+    } catch {
+        Write-Host "[WARN] insightface install error: $_" -ForegroundColor Yellow
+    } finally {
+        $ErrorActionPreference = $savedPref
+    }
+    # PuLID dependencies that are commonly missing
+    pip install onnxruntime-gpu facexlib timm
+
     $nodesDir = Join-Path $comfyPath "custom_nodes"
     if (-not (Test-Path $nodesDir)) {
         New-Item -ItemType Directory -Path $nodesDir | Out-Null
     }
     Set-Location $nodesDir
 
+    # ComfyUI-TeaCache (welltop-cn) удалён из списка — нода ломается на свежих
+    # ComfyUI: "cannot import name 'precompute_freqs_cis' from 'comfy.ldm.lightricks.model'".
+    # Lightning LoRA даёт основное ускорение (×20), TeaCache добавлял лишь ~30%.
     $customNodes = @(
         "https://github.com/ltdrdata/ComfyUI-Manager.git",
         "https://github.com/city96/ComfyUI-GGUF.git",
@@ -144,7 +177,6 @@ if (-not $SkipComfyUI) {
         "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git",
         "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git",
         "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git",
-        "https://github.com/welltop-cn/ComfyUI-TeaCache.git",
         "https://github.com/rgthree/rgthree-comfy.git",
         "https://github.com/ShmuelRonen/ComfyUI-LatentSyncWrapper.git",
         "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation.git"
@@ -176,8 +208,26 @@ if (-not $SkipComfyUI) {
         }
     }
 
+    # ----- Re-pin NumPy<2 AFTER nodes -----
+    # Какая-нибудь нода в своих requirements могла подтянуть NumPy 2 через
+    # transitive deps (например, через свежий scipy/scikit-image без верхней границы).
+    # Прогоняем pin ещё раз, чтобы гарантировать совместимость с insightface.
+    Write-Host "[INFO] Re-pinning numpy<2 after custom_nodes install" -ForegroundColor Cyan
+    pip install "numpy<2" --force-reinstall
+
+    # ----- Sanity check: insightface действительно импортируется -----
+    Write-Host "[INFO] Verifying insightface imports cleanly..." -ForegroundColor Cyan
+    $checkResult = (python -c "import insightface; print('OK', insightface.__version__)" 2>&1 | Out-String).Trim()
+    if ($checkResult -match '^OK') {
+        Write-Host "[OK] $checkResult"
+    } else {
+        Write-Host "[ERR] insightface import broken:" -ForegroundColor Red
+        Write-Host $checkResult -ForegroundColor Red
+        Write-Host "      PuLID node will fail to load. Fix manually before launching ComfyUI." -ForegroundColor Yellow
+    }
+
     deactivate
-    Write-Host "[OK] ComfyUI + 13 custom nodes installed at $comfyPath"
+    Write-Host "[OK] ComfyUI + 12 custom nodes installed at $comfyPath"
 } else {
     Write-Host "[SKIP] ComfyUI skipped" -ForegroundColor Yellow
 }
@@ -238,6 +288,11 @@ if (-not $SkipF5TTS) {
     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
     pip install -e .
     pip install ruaccent
+
+    # F5-TTS use librosa/torchaudio — they pull NumPy 2 via fresh scipy.
+    # Pin to 1.x for consistency with the rest of the stack.
+    pip install "numpy<2" --force-reinstall
+
     deactivate
 
     Write-Host "[OK] F5-TTS installed at $f5Path"
@@ -264,6 +319,11 @@ if (-not $SkipRVC) {
     python -m pip install --upgrade pip
     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
     pip install -r requirements.txt
+
+    # RVC depends on librosa/numba, which historically don't like NumPy 2.
+    # Keep the whole project on NumPy 1.x.
+    pip install "numpy<2" --force-reinstall
+
     deactivate
 
     Write-Host "[OK] RVC installed at $rvcPath"

@@ -83,7 +83,7 @@ class FluxKontextSettings:
     scheduler = "beta"          # для Kontext рекомендуется beta
 
 class WanSettings:
-    """Wan 2.2 I2V Q4_K_M + Lightning — 3-5 мин на 5 сек клип"""
+    """Wan 2.2 I2V Q4_K_M + Lightning — 4-6 мин на 5 сек клип (без TeaCache)"""
     # размер — держим 480p для 12 GB
     width = 832
     height = 480
@@ -99,9 +99,11 @@ class WanSettings:
     # Память
     blocks_to_swap = 25         # для Q4_K_M на 12 GB оптимально 20-30
     enable_sage_attention = True
-    enable_teacache = True
-    teacache_threshold = 0.25   # рекомендация для Wan
-    # TeaCache + torch.compile вместе дают ×2.5-3 ускорение
+    # TeaCache отключён — нода ComfyUI-TeaCache (welltop-cn) ломается на свежих
+    # ComfyUI (precompute_freqs_cis перенесли в ядре). Lightning LoRA даёт основное
+    # ускорение (×20), потеря TeaCache ~30% — терпимо.
+    enable_teacache = False
+    teacache_threshold = 0.25   # неактивно пока enable_teacache=False
 
 class SeedVR2Settings:
     """SeedVR2 7B FP8 — апскейл с temporal consistency"""

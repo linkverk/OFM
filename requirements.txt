@@ -24,4 +24,6 @@ ruaccent>=1.5                        # CPU, лёгкий, ~100 MB
 
 # --- Утилиты ---
 Pillow>=10.0                         # работа с изображениями
-numpy>=1.24
+numpy>=1.24,<2.0                     # insightface 0.7.3 (PuLID) собран под NumPy 1.x ABI;
+                                     # NumPy 2 ломает mesh_core_cython с ValueError:
+                                     # "numpy.dtype size changed, may indicate binary incompatibility"
