@@ -69,11 +69,11 @@
     "class_type": "LoadWanVideoT5TextEncoder",
     "inputs": {
       "model_name": "{{WAN_T5}}",
-      "precision": "fp8_e4m3fn",
+      "precision": "bf16",
       "load_device": "offload_device",
       "quantization": "disabled"
-    }
-  },
+    },
+    "_note_precision": "Свежий Kijai сузил precision до ['fp32','bf16']. Файл umt5_xxl_fp8_e4m3fn_scaled.safetensors уже хранится как fp8 — quantization=disabled оставляет его в fp8 на диске/в RAM, precision=bf16 — это compute precision на GPU."
   "7": {
     "class_type": "LoadWanVideoClipTextEncoder",
     "inputs": {

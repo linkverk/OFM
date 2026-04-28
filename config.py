@@ -200,9 +200,10 @@ class FluxGymSettings:
 # Флаги запуска ComfyUI для 12 GB + 32 GB RAM:
 COMFYUI_LAUNCH_FLAGS = [
     "--use-sage-attention",     # быстрее на Ada Lovelace
-    "--fast",                    # fp16 accumulation
-    "--reserve-vram", "0.5",    # оставить под систему
-    # "--disable-smart-memory", # включать если ловишь OOM на Wan
+    "--reserve-vram", "1.0",    # оставить под систему (поднято с 0.5 — больше запаса при тяжёлых workflow)
+    "--disable-dynamic-vram",   # отключить comfy-aimdo hooks (CUDA driver detour). Конфликтует с GGUF partial unload — 'CUDA error: invalid argument' при partially_unload Q5_K тензоров.
+    # "--fast",                  # ОТКЛЮЧЕНО: fp16 accumulation плохо дружит с GGUF Q5_K (Flux). Включай только если все модели в нативной точности.
+    # "--disable-smart-memory",  # включать если ловишь OOM на Wan
 ]
 
 # Системные пороги

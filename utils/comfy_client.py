@@ -41,7 +41,10 @@ class ComfyClient:
         )
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
-                return json.loads(resp.read())
+                body = resp.read()
+                if not body:
+                    return {}
+                return json.loads(body)
         except urllib.error.HTTPError as e:
             # ComfyUI возвращает структурированный JSON при валидационных ошибках.
             # Без чтения body urllib даёт только "HTTP Error 400: Bad Request" — бесполезно.
