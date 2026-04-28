@@ -20,6 +20,21 @@ Gradio веб-интерфейс для AI OFM Studio.
 import sys
 from pathlib import Path
 
+if sys.platform == "win32":
+    # Глушит шум "ConnectionResetError [WinError 10054]" из asyncio
+    # ProactorEventLoop при разрыве TCP-соединений (gradio/uvicorn).
+    # Сам пайплайн не задет — это исключения в callback при shutdown сокета.
+    from asyncio.proactor_events import _ProactorBasePipeTransport
+    _orig_call_connection_lost = _ProactorBasePipeTransport._call_connection_lost
+
+    def _silent_call_connection_lost(self, exc):
+        try:
+            _orig_call_connection_lost(self, exc)
+        except (ConnectionResetError, ConnectionAbortedError, OSError):
+            pass
+
+    _ProactorBasePipeTransport._call_connection_lost = _silent_call_connection_lost
+
 try:
     import gradio as gr
 except ImportError:
