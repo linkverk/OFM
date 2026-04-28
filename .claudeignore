@@ -1,0 +1,102 @@
+# ============================================================
+# AI OFM Studio — .claudeignore
+# ============================================================
+# Дополнение к .gitignore специально для Claude Code: что агенту
+# НЕ читать, чтобы не палить контекст. Большая часть уже покрыта
+# .gitignore (Claude его уважает) — здесь дублируем критичное и
+# добавляем defense-in-depth на случай, если внешние репо окажутся
+# внутри рабочей директории.
+
+# ------- Тяжёлые внешние установки -------
+# Если ComfyUI/F5-TTS/RVC/fluxgym оказались внутри репо (typical
+# для new contributors), Claude не должен их крaulить. Отдельно от
+# .gitignore — потому что игнор там может быть случайно ослаблен.
+ComfyUI/
+F5-TTS/
+RVC/
+fluxgym/
+Mangio-RVC-Fork/
+claude-memory-compiler/
+
+# ------- Бинарники моделей (читать нечего, токены сгорят) -------
+*.safetensors
+*.gguf
+*.ckpt
+*.pth
+*.bin
+*.onnx
+*.pt
+*.pkl
+*.index
+models/
+checkpoints/
+ckpts/
+
+# ------- Сгенерированные артефакты -------
+output/
+outputs/
+runs/
+temp/
+tmp/
+batches/
+logs/
+*.log
+
+# ------- Медиа -------
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.webm
+*.gif
+*.mp3
+*.wav
+*.ogg
+*.flac
+*.m4a
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.bmp
+*.tiff
+
+# ------- Кэши -------
+__pycache__/
+.cache/
+.huggingface/
+huggingface/
+gradio_cached_examples/
+flagged/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ------- venv -------
+venv/
+venv-*/
+.venv/
+py311/
+py312/
+
+# ------- Датасеты LoRA / референсы пользователя -------
+lora_datasets/
+datasets/
+refs/
+references/
+voice_samples/
+face_refs/
+
+# ------- IDE -------
+.vscode/
+.idea/
+
+# ------- Архивы -------
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+
+# ------- Obsidian internals -------
+.obsidian/
