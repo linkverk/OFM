@@ -44,8 +44,8 @@ FACE_YOLO = "bbox/face_yolov8m.pt"                  # для FaceDetailer
 WAN_HIGH_NOISE = "wan2.2_i2v_high_noise_14B_Q4_K_M.gguf"
 WAN_LOW_NOISE = "wan2.2_i2v_low_noise_14B_Q4_K_M.gguf"
 WAN_VAE = "wan_2.1_vae.safetensors"
-WAN_CLIP_VISION = "clip_vision_h.safetensors"
-WAN_T5 = "umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+WAN_CLIP_VISION = "open-clip-xlm-roberta-large-vit-huge-14_visual_fp16.safetensors"  # свежий LoadWanVideoClipTextEncoder требует именно XLM-RoBERTa-ViT-H/14, обычный clip_vision_h не подходит
+WAN_T5 = "umt5_xxl_fp16.safetensors"  # fp8_e4m3fn_scaled больше не принимается свежим LoadWanVideoT5TextEncoder ('Invalid T5 text encoder model, fp8 scaled is not supported')
 
 # Lightning LoRA — КРИТИЧНО, ускоряет x20
 WAN_LIGHTNING_HIGH = "wan2.2_i2v_lightning_4steps_high_noise_v1.1.safetensors"
@@ -201,7 +201,10 @@ class FluxGymSettings:
 COMFYUI_LAUNCH_FLAGS = [
     "--use-sage-attention",     # быстрее на Ada Lovelace
     "--reserve-vram", "1.0",    # оставить под систему (поднято с 0.5 — больше запаса при тяжёлых workflow)
-    "--disable-dynamic-vram",   # отключить comfy-aimdo hooks (CUDA driver detour). Конфликтует с GGUF partial unload — 'CUDA error: invalid argument' при partially_unload Q5_K тензоров.
+    "--disable-dynamic-vram",   # comfy-aimdo dynamic VRAM hooks → одна из причин CUDA crash при partial_unload
+    "--disable-async-offload",  # async weight offloading со 2 streams aimdo. Виновник 'CUDA error: invalid argument' в partially_unload — m.to(device_to) идёт через альтернативный stream и валится при cudaMallocAsync allocator. Без этого флага — crash на FaceDetailer VAE decode после Flux GGUF Q5_K.
+    "--disable-cuda-malloc",    # вторая причина того же 'CUDA error: invalid argument', но уже на свежем module.to(device) (RetinaFace в facerestore_cf после FaceDetailer). cudaMallocAsync allocator на cu130 + pytorch 2.9.1 ломается на повторных аллокациях после tяжёлых GGUF prompts. Стандартный синхронный malloc стабилен.
+    "--disable-pinned-memory",  # третья и последняя aimdo runtime-hook ('Enabled pinned memory'). Без неё load_state_dict для RetinaFace в facerestore_cf падает с тем же 'CUDA error: invalid argument' при копировании весов CPU→GPU через staged DMA. С этими 4 флагами aimdo полностью обезврежен в части model-load пути.
     # "--fast",                  # ОТКЛЮЧЕНО: fp16 accumulation плохо дружит с GGUF Q5_K (Flux). Включай только если все модели в нативной точности.
     # "--disable-smart-memory",  # включать если ловишь OOM на Wan
 ]

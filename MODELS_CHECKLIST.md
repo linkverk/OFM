@@ -53,8 +53,8 @@ EVA CLIP и AntelopeV2 скачаются нодой автоматически 
   - в нашем проекте: `wan2.2_i2v_low_noise_14B_Q4_K_M.gguf`
 
 **vae/** — `wan_2.1_vae.safetensors`
-**clip_vision/** — `clip_vision_h.safetensors`
-**clip/** (или text_encoders/) — `umt5_xxl_fp8_e4m3fn_scaled.safetensors`
+**clip_vision/** — `open-clip-xlm-roberta-large-vit-huge-14_visual_fp16.safetensors` (Kijai/WanVideo_comfy; стандартный clip_vision_h.safetensors свежий LoadWanVideoClipTextEncoder отвергает)
+**clip/** (или text_encoders/) — `umt5_xxl_fp16.safetensors` (свежий Kijai отвергает fp8 scaled версию)
 
 Все три из одного репо: https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/tree/main/split_files — это официальный repackaged комплект для ComfyUI.
 
@@ -70,6 +70,7 @@ EVA CLIP и AntelopeV2 скачаются нодой автоматически 
 
 **seedvr2/** (создать) или **diffusion_models/**:
 - `seedvr2_ema_7b_fp8_e4m3fn.safetensors` — https://huggingface.co/numz/SeedVR2_comfyUI
+- `ema_vae_fp16.safetensors` — там же (единственный VAE репо; иначе custom-node качает его сам при первом запуске)
 
 > ⚠️ **Баг текущего проекта:** в `config.py` указано имя `seedvr2_ema_7b_fp8_e4m3fn_mixed_block35_fp16.safetensors`, но `download_models.py` качает `seedvr2_ema_7b_fp8_e4m3fn.safetensors` — реальный файл на HF. Поправь одно из двух:
 > - либо переименуй скачанный файл в то что ждёт `config.py`

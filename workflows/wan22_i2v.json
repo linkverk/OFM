@@ -44,17 +44,20 @@
     "inputs": {
       "lora": "{{LIGHTNING_HIGH}}",
       "strength": 1.0,
-      "prev_lora": null,
-      "blocks": null
-    }
+      "merge_loras": false,
+      "low_mem_load": false,
+      "prev_lora": null
+    },
+    "_note_blocks": "Поле 'blocks' (SELECTEDBLOCKS) удалено — Kijai 998a69c+ падает на blocks=None в getlorapath:461. Для block-level LoRA tuning нужно добавить ноду WanVideoLoraBlockEdit. merge_loras=false обязательно (иначе WanVideoSetLoRAs отказывается mergить без low_mem_load)."
   },
   "4": {
     "class_type": "WanVideoLoraSelect",
     "inputs": {
       "lora": "{{LIGHTNING_LOW}}",
       "strength": 1.0,
-      "prev_lora": null,
-      "blocks": null
+      "merge_loras": false,
+      "low_mem_load": false,
+      "prev_lora": null
     }
   },
 
@@ -74,6 +77,7 @@
       "quantization": "disabled"
     },
     "_note_precision": "Свежий Kijai сузил precision до ['fp32','bf16']. Файл umt5_xxl_fp8_e4m3fn_scaled.safetensors уже хранится как fp8 — quantization=disabled оставляет его в fp8 на диске/в RAM, precision=bf16 — это compute precision на GPU."
+  },
   "7": {
     "class_type": "LoadWanVideoClipTextEncoder",
     "inputs": {

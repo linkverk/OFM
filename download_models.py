@@ -289,14 +289,15 @@ def main():
              "wan_2.1_vae.safetensors",
              models / "vae",
              subfolder="split_files/vae")
-        _try(failures, "wan clip_vision_h",
+        # CLIP vision — свежий LoadWanVideoClipTextEncoder требует XLM-RoBERTa-ViT-H/14, не стандартный clip_vision_h.
+        _try(failures, "wan clip_vision xlm-roberta-vit-h",
+             download, "Kijai/WanVideo_comfy",
+             "open-clip-xlm-roberta-large-vit-huge-14_visual_fp16.safetensors",
+             models / "clip_vision")
+        # T5 fp16 — свежий Kijai (LoadWanVideoT5TextEncoder) отвергает fp8_e4m3fn_scaled.
+        _try(failures, "umt5 fp16",
              download, "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
-             "clip_vision_h.safetensors",
-             models / "clip_vision",
-             subfolder="split_files/clip_vision")
-        _try(failures, "umt5 fp8 scaled",
-             download, "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
-             "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+             "umt5_xxl_fp16.safetensors",
              models / "clip",
              subfolder="split_files/text_encoders")
 
@@ -325,6 +326,13 @@ def main():
              "seedvr2_ema_7b_fp8_e4m3fn.safetensors",
              models / "seedvr2",
              fallback_patterns=["seedvr2_ema_7b_fp8", "seedvr2_7b_fp8", "7b_fp8_e4m3fn"])
+        # VAE — единственный для SeedVR2, иначе custom-node качает на первом запуске
+        # и ломается на закрытых сетках/прокси (вне нашего error-aggregation).
+        _try(failures, "seedvr2 vae fp16",
+             download, "numz/SeedVR2_comfyUI",
+             "ema_vae_fp16.safetensors",
+             models / "seedvr2",
+             fallback_patterns=["ema_vae_fp16", "vae_fp16", "ema_vae"])
         print()
 
     # ========== 5. Face restoration ==========

@@ -96,7 +96,7 @@ FLUXGYM_ROOT = Path(r"D:\GitHub\OFM\ai-ofm\fluxgym")
 ```powershell
 cd D:\GitHub\OFM\ai-ofm\ComfyUI
 venv\Scripts\activate
-python main.py --use-sage-attention --fast --reserve-vram 0.5
+python main.py --use-sage-attention --reserve-vram 1.0 --disable-dynamic-vram --disable-async-offload --disable-cuda-malloc --disable-pinned-memory
 ```
 
 Дождись строчки `To see the GUI go to: http://127.0.0.1:8188`.
