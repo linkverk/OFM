@@ -51,6 +51,15 @@ def _require_file(path_str: str) -> Path:
     return p
 
 
+def _quality_flag(args) -> Optional[bool]:
+    """Tri-state: --quality / --no-quality / None (берём дефолт из QualitySettings.enabled)."""
+    if getattr(args, "quality", None) is True:
+        return True
+    if getattr(args, "no_quality", None) is True:
+        return False
+    return None
+
+
 def _require_comfy() -> ComfyClient:
     client = ComfyClient()
     if not client.is_alive():
@@ -94,6 +103,8 @@ def cmd_character(args):
         negative=args.negative,
         count=args.count,
         seed=args.seed,
+        quality_mode=_quality_flag(args),
+        n_variants=args.variants,
     )
     print(f"\n✅ Сгенерировано {len(results)}:")
     for p in results:
@@ -109,6 +120,8 @@ def cmd_i2v(args):
         negative=args.negative,
         seed=args.seed,
         frames=args.frames,
+        quality_mode=_quality_flag(args),
+        n_variants=args.variants,
     )
     print(f"\n✅ Клипы:")
     for p in results:
@@ -207,6 +220,23 @@ def cmd_batch(args):
 
 def cmd_batch_template(args):
     write_csv_template(Path(args.out))
+    return 0
+
+
+def cmd_quality_stats(_args):
+    """Показывает текущее состояние bandit-статистик по всем стадиям."""
+    from utils.bandit import get_bandit
+    b = get_bandit()
+    for stage in ("character", "i2v", "kontext"):
+        rows = b.stats_summary(stage)
+        if not rows:
+            continue
+        print(f"\n=== {stage} ===")
+        # сортируем по mean убыв. чтобы лучшие arm-ы наверху
+        rows_sorted = sorted(rows, key=lambda r: r["mean"], reverse=True)
+        for i, r in enumerate(rows_sorted):
+            print(f"  #{i}  n={r['n']:<4} mean={r['mean']:+.4f}  "
+                  f"var={r['var']:.4f}  params={r['params']}")
     return 0
 
 
@@ -325,6 +355,12 @@ def build_parser():
     pc.add_argument("--negative", default=None)
     pc.add_argument("-n", "--count", type=int, default=1)
     pc.add_argument("--seed", type=int, default=None)
+    pc.add_argument("--variants", type=int, default=None,
+                    help="сколько кандидатов скорить на финальный (Best-of-N)")
+    pc.add_argument("--quality", action="store_true",
+                    help="принудительно включить Best-of-N + bandit")
+    pc.add_argument("--no-quality", action="store_true", dest="no_quality",
+                    help="отключить Best-of-N (одна генерация на финальный)")
 
     pi = sub.add_parser("i2v", help="image → video")
     pi.add_argument("--image", required=True)
@@ -332,6 +368,11 @@ def build_parser():
     pi.add_argument("--negative", default=None)
     pi.add_argument("--frames", type=int, default=None, help="число кадров (81 = 5 сек)")
     pi.add_argument("--seed", type=int, default=None)
+    pi.add_argument("--variants", type=int, default=None,
+                    help="сколько клипов проскорить (по умолчанию 1, дорого)")
+    pi.add_argument("--quality", action="store_true",
+                    help="принудительно включить Best-of-N + bandit")
+    pi.add_argument("--no-quality", action="store_true", dest="no_quality")
 
     pl = sub.add_parser("lipsync", help="lip sync через LatentSync 1.6")
     pl.add_argument("--video", required=True)
@@ -387,6 +428,8 @@ def build_parser():
     pbt = sub.add_parser("batch-template", help="создать CSV-шаблон")
     pbt.add_argument("--out", default="batch_template.csv")
 
+    sub.add_parser("quality-stats", help="показать статистику bandit-arm-ов")
+
     pf = sub.add_parser("full", help="полный пайплайн")
     pf.add_argument("--face", required=True)
     pf.add_argument("--prompt", required=True)
@@ -429,6 +472,7 @@ def main():
         "lora-dataset": cmd_lora_dataset,
         "batch": cmd_batch,
         "batch-template": cmd_batch_template,
+        "quality-stats": cmd_quality_stats,
     }
     return handlers[args.cmd](args)
 

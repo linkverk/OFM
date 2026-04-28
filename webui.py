@@ -80,13 +80,15 @@ def _path_from_gradio(obj) -> Path:
 
 
 @_safe
-def ui_character(face_file, prompt, count, seed):
+def ui_character(face_file, prompt, count, seed, quality_on, variants):
     face = _path_from_gradio(face_file)
     if not face or not face.exists():
         return None, "Загрузи референс лица"
     results = generate_character(
         face_ref=face, prompt=prompt,
         count=int(count), seed=int(seed) if seed else None,
+        quality_mode=bool(quality_on),
+        n_variants=int(variants) if variants else None,
     )
     if not results:
         return None, "Ничего не сгенерировано"
@@ -106,7 +108,7 @@ def ui_kontext(ref_file, edit_prompt, count, seed):
 
 
 @_safe
-def ui_i2v(image_file, motion, frames, seed):
+def ui_i2v(image_file, motion, frames, seed, quality_on, variants):
     img = _path_from_gradio(image_file)
     if not img or not img.exists():
         return None, "Загрузи изображение"
@@ -114,6 +116,8 @@ def ui_i2v(image_file, motion, frames, seed):
         image=img, motion_prompt=motion,
         frames=int(frames) if frames else None,
         seed=int(seed) if seed else None,
+        quality_mode=bool(quality_on),
+        n_variants=int(variants) if variants else None,
     )
     return str(results[0]) if results else None, f"✅ {results[0].name if results else ''}"
 
@@ -333,13 +337,22 @@ def build_ui():
                     with gr.Column():
                         c_face = gr.File(label="Референс лица", file_types=["image"])
                         c_prompt = gr.Textbox(label="Описание сцены", lines=2)
-                        c_count = gr.Slider(1, 10, value=3, step=1, label="Вариантов")
+                        c_count = gr.Slider(1, 10, value=3, step=1, label="Финальных вариантов")
                         c_seed = gr.Number(label="Seed", precision=0, value=None)
+                        with gr.Accordion("⭐ Best-of-N + bandit", open=True):
+                            c_quality = gr.Checkbox(label="Включить (выбирать лучший из N)", value=True)
+                            c_variants = gr.Slider(1, 6, value=3, step=1,
+                                                   label="Кандидатов на финальный (N)")
+                            gr.Markdown(
+                                "_Скорер CLIP выбирает лучший, bandit запоминает выигрышные параметры. "
+                                "Каждый последующий прогон смещается к лучшим аркам._"
+                            )
                         c_btn = gr.Button("Сгенерировать", variant="primary")
                     with gr.Column():
                         c_gallery = gr.Gallery(label="Результаты", columns=3, height=500)
                         c_status = gr.Textbox(label="Статус")
-                c_btn.click(ui_character, inputs=[c_face, c_prompt, c_count, c_seed],
+                c_btn.click(ui_character,
+                            inputs=[c_face, c_prompt, c_count, c_seed, c_quality, c_variants],
                             outputs=[c_gallery, c_status])
 
             # ====== KONTEXT ======
@@ -371,11 +384,16 @@ def build_ui():
                         i_frames = gr.Slider(33, 121, value=81, step=4,
                                              label="Кадров (81=5сек@16fps)")
                         i_seed = gr.Number(label="Seed", precision=0, value=None)
+                        with gr.Accordion("⭐ Best-of-N + bandit", open=False):
+                            i_quality = gr.Checkbox(label="Включить (по умолчанию N=1, дорого)", value=True)
+                            i_variants = gr.Slider(1, 4, value=1, step=1,
+                                                   label="Клипов на финальный (~5 мин каждый)")
                         i_btn = gr.Button("Анимировать", variant="primary")
                     with gr.Column():
                         i_video = gr.Video(label="Клип")
                         i_status = gr.Textbox(label="Статус")
-                i_btn.click(ui_i2v, inputs=[i_img, i_motion, i_frames, i_seed],
+                i_btn.click(ui_i2v,
+                            inputs=[i_img, i_motion, i_frames, i_seed, i_quality, i_variants],
                             outputs=[i_video, i_status])
 
             # ====== LIP SYNC ======

@@ -195,6 +195,55 @@ class FluxGymSettings:
     auto_caption = True                          # Florence-2 автокэпшенинг
     trigger_word = "ohwx person"                 # редкий токен — обязательно
 
+# ============ САМОУЛУЧШЕНИЕ: BEST-OF-N + BANDIT (A+C) ============
+# Концепция: каждый прогон CLI/UI генерит N вариантов с параметрами, которые
+# подбирает Thompson sampling по истории, а CLIP-скорер выбирает лучший.
+# Cо временем bandit смещается к выигрывавшим конфигурациям, скорер — к
+# лучшему из N. Подробности — в utils/quality.py и utils/bandit.py.
+
+class QualitySettings:
+    """Best-of-N + auto-scoring."""
+    enabled = True              # глобальный выключатель — если False, всё работает как было
+    n_variants_image = 3        # сколько картинок генерировать на запрос (Flux/Kontext)
+    n_variants_video = 1        # для I2V N=1 по умолчанию (5 мин/клип, дорого); подними до 2-3 если есть время
+    scorer_model = "openai/clip-vit-base-patch32"  # ~400 MB, кэшируется HF
+    scorer_device = "cpu"       # cpu чтобы не отжирать VRAM у ComfyUI; можно "cuda" если есть запас
+    log_scores = True           # печатать скоры всех вариантов
+
+class BanditArms:
+    """
+    Дискретные конфигурации параметров под каждую стадию.
+    Bandit поддерживает Welford-статистику по каждому arm-у в
+    output/_bandit_history.json. Чтобы добавить arm — допиши dict
+    в нужный список; история по существующим arm-ам сохранится
+    (матчинг по сериализованным params).
+    """
+    # Flux + PuLID: основные ручки — steps и guidance.
+    # Sampler/scheduler оставлены фиксированными (плейсхолдера в JSON
+    # workflow пока нет; добавить в новой ревизии при желании).
+    character = [
+        {"steps": 20, "guidance": 3.5},   # текущий дефолт
+        {"steps": 24, "guidance": 3.0},
+        {"steps": 20, "guidance": 4.0},
+        {"steps": 28, "guidance": 3.5},
+        {"steps": 16, "guidance": 3.0},
+        {"steps": 24, "guidance": 2.5},
+    ]
+    # Flux Kontext: Kontext чувствительнее к guidance, держим узкий диапазон.
+    kontext = [
+        {"steps": 20, "guidance": 2.5},   # текущий дефолт
+        {"steps": 24, "guidance": 3.0},
+        {"steps": 20, "guidance": 2.0},
+    ]
+    # Wan 2.2 + Lightning: с CFG=1 фиксировано, варьируем распределение
+    # шагов high/low. Для I2V мало рычагов — это микро-тюнинг.
+    i2v = [
+        {"steps_high": 4, "steps_low": 4},   # текущий дефолт Lightning 4+4
+        {"steps_high": 4, "steps_low": 6},
+        {"steps_high": 6, "steps_low": 4},
+    ]
+
+
 # ============ ГЛОБАЛЬНЫЕ ОПЦИИ COMFYUI ============
 
 # Флаги запуска ComfyUI для 12 GB + 32 GB RAM:
