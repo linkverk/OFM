@@ -1,14 +1,16 @@
 {
-  "_comment": "SeedVR2 7B FP8 + BlockSwap 12 — апскейл видео x2 с temporal consistency",
-  "_uses": "ComfyUI-SeedVR2_VideoUpscaler by numz + VideoHelperSuite",
-  "_placeholders": "{{INPUT_VIDEO}}, {{UPSCALE}}, {{BATCH}}, {{BLOCKS_SWAP}}, {{SEED}}, {{SEEDVR2_MODEL}}",
+  "_comment": "SeedVR2 7B FP8 video upscale + temporal consistency. Граф переписан под актуальный numz/ComfyUI-SeedVR2_VideoUpscaler (апрель 2026): вместо одной комбайн-ноды + SeedVR2BlockSwapConfig теперь 3 ноды — SeedVR2LoadDiTModel + SeedVR2LoadVAEModel + SeedVR2VideoUpscaler. Источник графа — ComfyUI-SeedVR2_VideoUpscaler/example_workflows/SeedVR2_HD_video_upscale.json, адаптировано под 7B FP8 + 12GB VRAM (BLOCKS_SWAP=12 вместо 32 для 3B).",
+  "_uses": "ComfyUI-SeedVR2_VideoUpscaler (numz/ainvfx) + VideoHelperSuite",
+  "_placeholders": "{{INPUT_VIDEO}}, {{SEEDVR2_MODEL}}, {{BLOCKS_SWAP}}, {{BATCH}}, {{UPSCALE}}, {{SEED}}",
+  "_note_resolution": "UPSCALE = target resolution по короткой стороне (например 1080 для 720p→1080p апскейла). Aspect ratio сохраняется автоматически. max_resolution=0 = без верхнего cap'а.",
+  "_note_vae": "VAE ema_vae_fp16.safetensors авто-скачается нодой при первом запуске в models/seedvr2/. encode_tile_size=1024 / decode_tile_size=768 — консервативные значения для 12GB.",
+  "_note_attention": "attention_mode=sdpa — единственный гарантированно работающий backend. flash_attn_2/3 требует пакета flash-attn (не установлен на этой конфигурации). Sage в SeedVR2 не поддержан этой нодой явно.",
 
   "1": {
     "class_type": "VHS_LoadVideo",
     "inputs": {
       "video": "{{INPUT_VIDEO}}",
       "force_rate": 0,
-      "force_size": "Disabled",
       "custom_width": 0,
       "custom_height": 0,
       "frame_load_cap": 0,
@@ -18,44 +20,68 @@
   },
 
   "2": {
-    "class_type": "SeedVR2BlockSwapConfig",
+    "class_type": "SeedVR2LoadDiTModel",
     "inputs": {
-      "blocks_to_swap": "{{BLOCKS_SWAP}}",
-      "offload_io_components": true,
-      "cache_model": false,
-      "use_non_blocking": true,
-      "enable_debug": false
-    }
-  },
-
-  "3": {
-    "class_type": "SeedVR2VideoUpscaler",
-    "inputs": {
-      "images": ["1", 0],
       "model": "{{SEEDVR2_MODEL}}",
-      "seed": "{{SEED}}",
-      "new_resolution": "{{UPSCALE}}",
-      "batch_size": "{{BATCH}}",
-      "preserve_vram": true,
-      "tiled_vae": true,
-      "cfg_scale": 1.0,
-      "block_swap_config": ["2", 0]
+      "device": "cuda:0",
+      "blocks_to_swap": "{{BLOCKS_SWAP}}",
+      "swap_io_components": false,
+      "offload_device": "cpu",
+      "cache_model": false,
+      "attention_mode": "sdpa"
+    },
+    "_note": "blocks_to_swap=12 (из config.py SeedVR2Settings) для 7B на 12GB. Допустимый диапазон 0-36 для 7B."
+  },
+  "3": {
+    "class_type": "SeedVR2LoadVAEModel",
+    "inputs": {
+      "model": "ema_vae_fp16.safetensors",
+      "device": "cuda:0",
+      "encode_tiled": true,
+      "encode_tile_size": 1024,
+      "encode_tile_overlap": 128,
+      "decode_tiled": true,
+      "decode_tile_size": 768,
+      "decode_tile_overlap": 128,
+      "tile_debug": "false",
+      "offload_device": "cpu",
+      "cache_model": false
     }
   },
 
   "4": {
+    "class_type": "SeedVR2VideoUpscaler",
+    "inputs": {
+      "image": ["1", 0],
+      "dit": ["2", 0],
+      "vae": ["3", 0],
+      "seed": "{{SEED}}",
+      "resolution": "{{UPSCALE}}",
+      "max_resolution": 0,
+      "batch_size": "{{BATCH}}",
+      "uniform_batch_size": true,
+      "color_correction": "lab",
+      "temporal_overlap": 0,
+      "prepend_frames": 0,
+      "input_noise_scale": 0.0,
+      "latent_noise_scale": 0.0,
+      "offload_device": "cpu",
+      "enable_debug": false
+    },
+    "_note_batch": "batch_size должен следовать паттерну 4n+1: 1, 5, 9, 13, 17. Из config — 5. uniform_batch_size=true рекомендован для устранения артефактов на последнем (неполном) батче."
+  },
+
+  "5": {
     "class_type": "VHS_VideoCombine",
     "inputs": {
-      "images": ["3", 0],
+      "images": ["4", 0],
       "frame_rate": 24,
       "loop_count": 0,
       "filename_prefix": "ai_ofm/upscaled",
       "format": "video/h264-mp4",
-      "pix_fmt": "yuv420p",
-      "crf": 18,
-      "save_metadata": true,
       "pingpong": false,
       "save_output": true
-    }
+    },
+    "_note_fps": "frame_rate=24 захардкожен — соответствует выходу Wan 2.2 I2V. Если на вход подаётся видео с другим fps, нужно либо передавать через плейсхолдер, либо переинтерполировать через RIFE."
   }
 }
