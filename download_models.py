@@ -320,18 +320,21 @@ def main():
     # ========== 4. SeedVR2 ==========
     if not args.skip_seedvr2:
         print("=== 4/6  SeedVR2 7B (~8 GB) ===")
-        (models / "seedvr2").mkdir(exist_ok=True)
+        # Custom-node ищет в models/SEEDVR2/ (UPPERCASE) — на NTFS регистр игнорируется,
+        # но при чистой установке директория создаётся nodом именно с заглавным именем
+        # и наш prefetch в lowercase 'seedvr2' промахивается (custom-node после
+        # auto-download кладёт в SEEDVR2/, fallback в seedvr2/ не происходит).
+        seedvr2_dir = models / "SEEDVR2"
+        seedvr2_dir.mkdir(exist_ok=True)
         _try(failures, "seedvr2 7b fp8",
              download, "numz/SeedVR2_comfyUI",
              "seedvr2_ema_7b_fp8_e4m3fn.safetensors",
-             models / "seedvr2",
+             seedvr2_dir,
              fallback_patterns=["seedvr2_ema_7b_fp8", "seedvr2_7b_fp8", "7b_fp8_e4m3fn"])
-        # VAE — единственный для SeedVR2, иначе custom-node качает на первом запуске
-        # и ломается на закрытых сетках/прокси (вне нашего error-aggregation).
         _try(failures, "seedvr2 vae fp16",
              download, "numz/SeedVR2_comfyUI",
              "ema_vae_fp16.safetensors",
-             models / "seedvr2",
+             seedvr2_dir,
              fallback_patterns=["ema_vae_fp16", "vae_fp16", "ema_vae"])
         print()
 
