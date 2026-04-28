@@ -10,7 +10,24 @@
       "Bash(grep -c \"D:\\\\\\\\\\\\\\\\GitHub\\\\\\\\\\\\\\\\ai-ofm\" /d/GitHub/OFM/README.md /d/GitHub/OFM/MODELS_CHECKLIST.md)",
       "Bash(gh api *)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(venv/Scripts/python.exe -m pip install \"numpy<2\" --force-reinstall)",
+      "Bash(venv/Scripts/python.exe -c \"import cv2, numpy; print\\('cv2', cv2.__version__, 'numpy', numpy.__version__\\); import insightface; print\\('insightface', insightface.__version__\\)\")",
+      "Bash(venv/Scripts/python.exe -c \"import torch; print\\('torch', torch.__version__, 'cuda', torch.version.cuda\\)\")",
+      "Bash(venv/Scripts/python.exe -c \"import sageattention; print\\('sage', sageattention.__version__ if hasattr\\(sageattention, '__version__'\\) else 'ok'\\)\")",
+      "Bash(gh release *)",
+      "WebFetch(domain:download.pytorch.org)",
+      "Bash(curl -s https://download.pytorch.org/whl/cu128/torch/)",
+      "Bash(curl -s https://download.pytorch.org/whl/cu130/torch/)",
+      "Bash(curl -s https://download.pytorch.org/whl/cu130/)",
+      "Bash(nvidia-smi)",
+      "Bash(venv/Scripts/python.exe -m pip uninstall -y torch torchvision torchaudio sageattention)",
+      "Bash(venv/Scripts/python.exe -m pip install torch==2.9.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130)",
+      "Bash(venv/Scripts/python.exe -m pip install \"https://github.com/woct0rdho/SageAttention/releases/download/v2.2.0-windows.post4/sageattention-2.2.0+cu130torch2.9.0andhigher.post4-cp39-abi3-win_amd64.whl\")",
+      "Bash(venv/Scripts/python.exe -m pip install -U triton-windows)",
+      "Bash(venv/Scripts/python.exe -c ' *)",
+      "Bash(curl -s https://download.pytorch.org/whl/cu130/torchaudio/)",
+      "Bash(venv/Scripts/python.exe -m pip install torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu130 --force-reinstall --no-deps)"
     ]
   }
 }

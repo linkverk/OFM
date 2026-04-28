@@ -124,8 +124,13 @@ if (-not $SkipComfyUI) {
     & "$comfyPath\venv\Scripts\Activate.ps1"
     python -m pip install --upgrade pip
 
-    # PyTorch with CUDA 12.1 (works for Ada Lovelace / 4070S)
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+    # PyTorch 2.9.1 + CUDA 13.0 (cu130) — нужен для DynamicVRAM в свежем ComfyUI
+    # и для последних оптимизаций comfy-kitchen (apply_rope, scaled_mm_nvfp4 и т.п.).
+    # Драйвер NVIDIA должен быть >= 580 (CUDA 13 runtime). Для Ada Lovelace / 4070S — ок.
+    # ВАЖНО: пинаем все три пакета явно. Без этого pip ставит torchaudio 2.11.0,
+    # собранный против другой torch-ABI, и torchaudio падает при импорте с
+    # WinError 127 ("Could not load _torchaudio.pyd"). torchvision 0.24.1 = торch 2.9.1.
+    pip install torch==2.9.1 torchvision==0.24.1 torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu130
     pip install -r requirements.txt
 
     # ----- Pin NumPy 1.x BEFORE installing custom_nodes -----
@@ -227,6 +232,28 @@ if (-not $SkipComfyUI) {
         Write-Host "      PuLID node will fail to load. Fix manually before launching ComfyUI." -ForegroundColor Yellow
     }
 
+    # ----- Sanity check: cv2 + numpy ABI совместимы -----
+    # Если nodes' requirements подтянули свежий opencv-python (требует NumPy 2),
+    # а мы держим NumPy 1.x — cv2 ловит "_ARRAY_API not found" при импорте,
+    # и все ноды с cv2 (Impact, KJNodes, VHS, SeedVR2, PuLID/insightface, WanWrapper
+    # FantasyPortrait/UniAnimate) падают на старте ComfyUI.
+    Write-Host "[INFO] Verifying cv2 imports cleanly with current numpy..." -ForegroundColor Cyan
+    $cv2Check = (python -c "import cv2, numpy; print('OK', 'cv2', cv2.__version__, 'numpy', numpy.__version__)" 2>&1 | Out-String).Trim()
+    if ($cv2Check -match '^OK') {
+        Write-Host "[OK] $cv2Check"
+    } else {
+        Write-Host "[WARN] cv2 import failed against numpy<2, downgrading opencv-python" -ForegroundColor Yellow
+        pip install "opencv-python<4.10" "opencv-contrib-python<4.10" --force-reinstall
+        $cv2Check2 = (python -c "import cv2, numpy; print('OK', 'cv2', cv2.__version__, 'numpy', numpy.__version__)" 2>&1 | Out-String).Trim()
+        if ($cv2Check2 -match '^OK') {
+            Write-Host "[OK] $cv2Check2"
+        } else {
+            Write-Host "[ERR] cv2 still broken after downgrade:" -ForegroundColor Red
+            Write-Host $cv2Check2 -ForegroundColor Red
+            Write-Host "      Многие custom_nodes не загрузятся. Проверь вручную перед запуском." -ForegroundColor Yellow
+        }
+    }
+
     deactivate
     Write-Host "[OK] ComfyUI + 13 custom nodes installed at $comfyPath"
 } else {
@@ -247,12 +274,14 @@ if ((-not $SkipSageAttention) -and (-not $SkipComfyUI)) {
 
     pip install -U triton-windows
 
-    $sageUrl = "https://github.com/woct0rdho/SageAttention/releases/download/v2.2.0-windows/sageattention-2.2.0+cu121torch2.5.1-$pyAbi-$pyAbi-win_amd64.whl"
+    # SageAttention 2.2.0.post4 — cu130 + torch 2.9.0+ wheel. Использует stable ABI
+    # (cp39-abi3), поэтому работает для cp310/cp311/cp312/cp313 — ABI-тег не нужен.
+    $sageUrl = "https://github.com/woct0rdho/SageAttention/releases/download/v2.2.0-windows.post4/sageattention-2.2.0+cu130torch2.9.0andhigher.post4-cp39-abi3-win_amd64.whl"
     $installed = $false
     try {
         pip install $sageUrl
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "[OK] SageAttention 2.2 installed"
+            Write-Host "[OK] SageAttention 2.2.0.post4 (cu130/torch2.9+) installed"
             $installed = $true
         }
     } catch {
@@ -262,7 +291,7 @@ if ((-not $SkipSageAttention) -and (-not $SkipComfyUI)) {
     if (-not $installed) {
         Write-Host "[WARN] SageAttention auto-install failed." -ForegroundColor Yellow
         Write-Host "       Install manually from https://github.com/woct0rdho/SageAttention/releases" -ForegroundColor Yellow
-        Write-Host "       Pick a wheel for your Python ($pyAbi) and PyTorch version." -ForegroundColor Yellow
+        Write-Host "       Pick a wheel matching your torch+CUDA combo ($pyAbi)." -ForegroundColor Yellow
     }
 
     deactivate
