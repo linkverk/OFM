@@ -92,7 +92,7 @@
   "11": {
     "class_type": "WanVideoImageToVideoEncode",
     "inputs": {
-      "image": ["10", 0],
+      "start_image": ["10", 0],
       "vae": ["5", 0],
       "width": "{{WIDTH}}",
       "height": "{{HEIGHT}}",
@@ -102,7 +102,8 @@
       "end_latent_strength": 1.0,
       "force_offload": true,
       "clip_embeds": ["13", 0]
-    }
+    },
+    "_note_rename": "В свежем WanWrapper inputs.image переименован в start_image (и стал optional, т.к. появилась поддержка end_image и FLF2V/Fun control)."
   },
   "12": {
     "class_type": "WanVideoTextEncode",
@@ -117,19 +118,26 @@
     "class_type": "WanVideoClipVisionEncode",
     "inputs": {
       "clip_vision": ["7", 0],
-      "image": ["10", 0]
-    }
+      "image_1": ["10", 0],
+      "strength_1": 1.0,
+      "strength_2": 1.0,
+      "crop": "center",
+      "combine_embeds": "average",
+      "force_offload": true
+    },
+    "_note_rename": "Свежий WanWrapper: inputs.image → image_1, плюс required strength_1/2, crop, combine_embeds, force_offload (для multi-image clip-vision; мы используем только image_1)."
   },
 
   "30": {
-    "class_type": "WanVideoLoraLoad",
+    "class_type": "WanVideoSetLoRAs",
     "inputs": {
       "model": ["1", 0],
       "lora": ["3", 0]
-    }
+    },
+    "_note_rename": "WanVideoLoraLoad заменён парой WanVideoLoraSelect (выбирает LoRA → WANVIDLORA) + WanVideoSetLoRAs (применяет к model). Цепочка нескольких LoRA — через prev_lora у LoraSelect."
   },
   "31": {
-    "class_type": "WanVideoLoraLoad",
+    "class_type": "WanVideoSetLoRAs",
     "inputs": {
       "model": ["2", 0],
       "lora": ["4", 0]
@@ -147,12 +155,13 @@
       "shift": 5.0,
       "seed": "{{SEED}}",
       "scheduler": "lcm",
+      "riflex_freq_index": 0,
       "force_offload": true,
       "denoise_strength": 1.0,
       "start_step": 0,
       "end_step": "{{STEPS_HIGH}}"
     },
-    "_note": "стадия high-noise: 0 → STEPS_HIGH"
+    "_note": "стадия high-noise: 0 → STEPS_HIGH. riflex_freq_index=0 = RIFLEX выключен (родное поведение)."
   },
   "41": {
     "class_type": "WanVideoSampler",
@@ -165,6 +174,7 @@
       "shift": 5.0,
       "seed": "{{SEED}}",
       "scheduler": "lcm",
+      "riflex_freq_index": 0,
       "force_offload": true,
       "samples": ["40", 0],
       "denoise_strength": 1.0,
@@ -194,11 +204,9 @@
       "loop_count": 0,
       "filename_prefix": "ai_ofm/i2v",
       "format": "video/h264-mp4",
-      "pix_fmt": "yuv420p",
-      "crf": 19,
-      "save_metadata": true,
       "pingpong": false,
       "save_output": true
-    }
+    },
+    "_note_vhs": "crf/pix_fmt/save_metadata в свежем VHS убраны из API-входов — стали widget-only (хранятся в UI metadata, не в API payload). Применяются дефолты ffmpeg."
   }
 }

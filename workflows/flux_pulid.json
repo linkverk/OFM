@@ -72,8 +72,14 @@
       "image": ["20", 0],
       "weight": "{{PULID_WEIGHT}}",
       "start_at": 0.0,
-      "end_at": 1.0
-    }
+      "end_at": 1.0,
+      "fusion": "mean",
+      "fusion_weight_max": 1.0,
+      "fusion_weight_min": 0.0,
+      "train_step": 1000,
+      "use_gray": true
+    },
+    "_note_fusion": "fusion/fusion_weight_*/train_step/use_gray добавлены в свежей версии sipie800/PuLID-Flux-Enhanced (fusion-tuning). Дефолты соответствуют поведению ванильного PuLID. fusion='train_weight' включает обучение весов слияния (медленнее, иногда лучше похожесть)."
   },
 
   "30": {

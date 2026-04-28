@@ -27,7 +27,8 @@
       "Bash(venv/Scripts/python.exe -m pip install -U triton-windows)",
       "Bash(venv/Scripts/python.exe -c ' *)",
       "Bash(curl -s https://download.pytorch.org/whl/cu130/torchaudio/)",
-      "Bash(venv/Scripts/python.exe -m pip install torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu130 --force-reinstall --no-deps)"
+      "Bash(venv/Scripts/python.exe -m pip install torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu130 --force-reinstall --no-deps)",
+      "Bash(venv/Scripts/python.exe -m pip install -r custom_nodes/ComfyUI-Impact-Subpack/requirements.txt)"
     ]
   }
 }

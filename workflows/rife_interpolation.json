@@ -8,7 +8,6 @@
     "inputs": {
       "video": "{{INPUT_VIDEO}}",
       "force_rate": 0,
-      "force_size": "Disabled",
       "custom_width": 0,
       "custom_height": 0,
       "frame_load_cap": 0,
@@ -26,9 +25,12 @@
       "multiplier": "{{MULTIPLIER}}",
       "fast_mode": true,
       "ensemble": true,
-      "scale_factor": 1.0
+      "scale_factor": 1.0,
+      "dtype": "float32",
+      "torch_compile": false,
+      "batch_size": 1
     },
-    "_note": "multiplier 2 = удвоение fps (24→48), multiplier 3 = 24→72. rife47 = v4.7; актуальная v4.25 в некоторых билдах"
+    "_note": "multiplier 2 = удвоение fps (24→48), multiplier 3 = 24→72. rife47 = v4.7; актуальная v4.25 в некоторых билдах. Новые required: dtype/torch_compile/batch_size — оставляем дефолты ноды (FP32 + без compile + bs=1) ради стабильности."
   },
 
   "3": {
@@ -39,9 +41,6 @@
       "loop_count": 0,
       "filename_prefix": "ai_ofm/interpolated",
       "format": "video/h264-mp4",
-      "pix_fmt": "yuv420p",
-      "crf": 18,
-      "save_metadata": true,
       "pingpong": false,
       "save_output": true
     }

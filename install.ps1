@@ -182,6 +182,7 @@ if (-not $SkipComfyUI) {
         "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git",
         "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git",
         "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git",
+        "https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git",
         "https://github.com/rgthree/rgthree-comfy.git",
         "https://github.com/ShmuelRonen/ComfyUI-LatentSyncWrapper.git",
         "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation.git",
@@ -255,7 +256,7 @@ if (-not $SkipComfyUI) {
     }
 
     deactivate
-    Write-Host "[OK] ComfyUI + 13 custom nodes installed at $comfyPath"
+    Write-Host "[OK] ComfyUI + 14 custom nodes installed at $comfyPath"
 } else {
     Write-Host "[SKIP] ComfyUI skipped" -ForegroundColor Yellow
 }
