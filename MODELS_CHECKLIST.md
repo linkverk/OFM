@@ -6,7 +6,7 @@
 > **Быстрый путь** — `download_models.py` скачает всё автоматически:
 > ```powershell
 > pip install huggingface_hub
-> python download_models.py --comfyui D:\GitHub\ai-ofm\ComfyUI --f5tts D:\GitHub\ai-ofm\F5-TTS
+> python download_models.py --comfyui D:\GitHub\OFM\ai-ofm\ComfyUI --f5tts D:\GitHub\OFM\ai-ofm\F5-TTS
 > ```
 > Дальше в этом файле — справка на случай, если хочется скачать руками или разобраться откуда что.
 
@@ -99,8 +99,8 @@ EVA CLIP и AntelopeV2 скачаются нодой автоматически 
 
 **Установка F5-TTS (в отдельную папку, не в ComfyUI):**
 ```powershell
-git clone https://github.com/SWivid/F5-TTS D:\GitHub\ai-ofm\F5-TTS
-cd D:\GitHub\ai-ofm\F5-TTS
+git clone https://github.com/SWivid/F5-TTS D:\GitHub\OFM\ai-ofm\F5-TTS
+cd D:\GitHub\OFM\ai-ofm\F5-TTS
 python -m venv venv
 venv\Scripts\activate
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
@@ -108,14 +108,14 @@ pip install -e .
 pip install ruaccent
 ```
 
-Путь `D:\GitHub\ai-ofm\F5-TTS` должен совпадать с `F5_TTS_ROOT` в `config.py`.
+Путь `D:\GitHub\OFM\ai-ofm\F5-TTS` должен совпадать с `F5_TTS_ROOT` в `config.py`.
 
 **Русский файнтюн Misha24-10:**
 
 ```powershell
 huggingface-cli download Misha24-10/F5-TTS_RUSSIAN `
   F5TTS_v1_Base_v2/model_last_inference.safetensors `
-  --local-dir D:\GitHub\ai-ofm\F5-TTS\ckpts
+  --local-dir D:\GitHub\OFM\ai-ofm\F5-TTS\ckpts
 ```
 
 Переименуй `F5TTS_v1_Base_v2/model_last_inference.safetensors` → `F5TTS_v1_Base_v2.safetensors` (или поправь `F5Settings.ckpt_path`).
@@ -128,7 +128,7 @@ huggingface-cli download Misha24-10/F5-TTS_RUSSIAN `
 
 ```powershell
 huggingface-cli download SWivid/F5-TTS F5TTS_v1_Base/vocab.txt `
-  --local-dir D:\GitHub\ai-ofm\F5-TTS\ckpts
+  --local-dir D:\GitHub\OFM\ai-ofm\F5-TTS\ckpts
 ```
 
 **Доступные варианты ckpt от Misha24-10:**
@@ -142,22 +142,22 @@ huggingface-cli download SWivid/F5-TTS F5TTS_v1_Base/vocab.txt `
 
 **Установка (форк Mangio рекомендуется):**
 ```powershell
-git clone https://github.com/Mangio621/Mangio-RVC-Fork D:\GitHub\ai-ofm\RVC
-cd D:\GitHub\ai-ofm\RVC
+git clone https://github.com/Mangio621/Mangio-RVC-Fork D:\GitHub\OFM\ai-ofm\RVC
+cd D:\GitHub\OFM\ai-ofm\RVC
 python -m venv venv
 venv\Scripts\activate
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 pip install -r requirements.txt
 ```
 
-Путь `D:\GitHub\ai-ofm\RVC` должен совпадать с `RVC_ROOT` в `config.py`.
+Путь `D:\GitHub\OFM\ai-ofm\RVC` должен совпадать с `RVC_ROOT` в `config.py`.
 
 **Обучение своего голоса:** залей 10-30 минут чистой речи, запусти `go-web.bat` → вкладка Train → дождись 150-300 эпох. На 4070S это 1-3 часа.
 
 После обучения пропиши в `config.py`:
 ```python
-RVCSettings.model_pth = Path(r"D:\GitHub\ai-ofm\RVC\weights\my_voice.pth")
-RVCSettings.index_file = Path(r"D:\GitHub\ai-ofm\RVC\logs\my_voice\added_*.index")
+RVCSettings.model_pth = Path(r"D:\GitHub\OFM\ai-ofm\RVC\weights\my_voice.pth")
+RVCSettings.index_file = Path(r"D:\GitHub\OFM\ai-ofm\RVC\logs\my_voice\added_*.index")
 ```
 
 ## 11. Flux Kontext Dev (edit-based персонаж) — ~8 GB
@@ -174,8 +174,8 @@ RVCSettings.index_file = Path(r"D:\GitHub\ai-ofm\RVC\logs\my_voice\added_*.index
 
 **Установка (в отдельную папку, не в ComfyUI):**
 ```powershell
-git clone https://github.com/cocktailpeanut/fluxgym D:\GitHub\ai-ofm\fluxgym
-cd D:\GitHub\ai-ofm\fluxgym
+git clone https://github.com/cocktailpeanut/fluxgym D:\GitHub\OFM\ai-ofm\fluxgym
+cd D:\GitHub\OFM\ai-ofm\fluxgym
 python -m venv env
 env\Scripts\activate
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
@@ -185,14 +185,14 @@ pip install -r requirements.txt
 cd ..
 ```
 
-Путь `D:\GitHub\ai-ofm\fluxgym` должен совпадать с `FLUXGYM_ROOT` в `config.py`.
+Путь `D:\GitHub\OFM\ai-ofm\fluxgym` должен совпадать с `FLUXGYM_ROOT` в `config.py`.
 
 FluxGym подтянет базовые модели Flux-dev сам при первом запуске тренировки (~24 GB загрузки).
 
 **Workflow:**
 1. `python main.py lora-dataset --ref my_char.png --name anna_v1` — сгенерирует 30 вариаций в `output/lora_datasets/anna_v1/`
 2. Отсмотри папку — удали все плохие кадры (кривые лица, артефакты)
-3. Запусти FluxGym: `cd D:\GitHub\ai-ofm\fluxgym && env\Scripts\activate && python app.py`
+3. Запусти FluxGym: `cd D:\GitHub\OFM\ai-ofm\fluxgym && env\Scripts\activate && python app.py`
 4. Загрузи отобранные фото через Gradio UI, настрой параметры по инструкции в консоли
 5. 3-5 часов тренировки на 4070S
 6. Итог → скопируй `.safetensors` в `ComfyUI\models\loras\`
@@ -220,7 +220,7 @@ FluxGym подтянет базовые модели Flux-dev сам при пе
 `install.ps1` ставит автоматически. Ручная установка в venv ComfyUI:
 
 ```powershell
-cd D:\GitHub\ai-ofm\ComfyUI
+cd D:\GitHub\OFM\ai-ofm\ComfyUI
 venv\Scripts\activate
 pip install -U triton-windows
 # замени cp312 на свою версию Python (cp310/cp311/cp312)

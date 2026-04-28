@@ -6,7 +6,7 @@
     Installs ComfyUI + custom nodes, F5-TTS, RVC, FluxGym and all Python deps.
     Does NOT download ML models (see download_models.py, ~60 GB).
 .PARAMETER BasePath
-    Root folder for all installations. Default: D:\GitHub\ai-ofm
+    Root folder for all installations. Default: D:\GitHub\OFM\ai-ofm
 .EXAMPLE
     .\install.ps1
     .\install.ps1 -BasePath D:\AI
@@ -14,7 +14,7 @@
 #>
 
 param(
-    [string]$BasePath = "D:\GitHub\ai-ofm",
+    [string]$BasePath = "D:\GitHub\OFM\ai-ofm",
     [switch]$SkipComfyUI,
     [switch]$SkipF5TTS,
     [switch]$SkipRVC,
@@ -180,7 +180,7 @@ if (-not $SkipComfyUI) {
         "https://github.com/rgthree/rgthree-comfy.git",
         "https://github.com/ShmuelRonen/ComfyUI-LatentSyncWrapper.git",
         "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation.git",
-        "https://github.com/manuelplapper/ComfyUI-CodeFormer.git"
+        "https://github.com/mav-rik/facerestore_cf.git"
     )
 
     foreach ($repo in $customNodes) {

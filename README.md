@@ -43,7 +43,7 @@ python main.py full --face me.jpg `
 
 ### Быстрый путь — `install.ps1`
 
-Всё автоматически в одной корневой папке (дефолт: `D:\GitHub\ai-ofm`):
+Всё автоматически в одной корневой папке (дефолт: `D:\GitHub\OFM\ai-ofm`):
 
 ```powershell
 # Из папки с проектом
@@ -66,7 +66,7 @@ python main.py full --face me.jpg `
 ```powershell
 venv\Scripts\activate
 pip install huggingface_hub
-python download_models.py --comfyui D:\GitHub\ai-ofm\ComfyUI --f5tts D:\GitHub\ai-ofm\F5-TTS
+python download_models.py --comfyui D:\GitHub\OFM\ai-ofm\ComfyUI --f5tts D:\GitHub\OFM\ai-ofm\F5-TTS
 ```
 
 Скрипт устойчив к сбоям — если какая-то модель не скачалась, в конце выведется сводка, остальные продолжат качаться. Флаги пропуска категорий:
@@ -83,10 +83,10 @@ python download_models.py --comfyui D:\GitHub\ai-ofm\ComfyUI --f5tts D:\GitHub\a
 После установки открой `config.py` и убедись, что эти константы указывают на реальные папки:
 
 ```python
-COMFYUI_ROOT = Path(r"D:\GitHub\ai-ofm\ComfyUI")
-F5_TTS_ROOT  = Path(r"D:\GitHub\ai-ofm\F5-TTS")
-RVC_ROOT     = Path(r"D:\GitHub\ai-ofm\RVC")
-FLUXGYM_ROOT = Path(r"D:\GitHub\ai-ofm\fluxgym")
+COMFYUI_ROOT = Path(r"D:\GitHub\OFM\ai-ofm\ComfyUI")
+F5_TTS_ROOT  = Path(r"D:\GitHub\OFM\ai-ofm\F5-TTS")
+RVC_ROOT     = Path(r"D:\GitHub\OFM\ai-ofm\RVC")
+FLUXGYM_ROOT = Path(r"D:\GitHub\OFM\ai-ofm\fluxgym")
 ```
 
 ## Использование
@@ -94,7 +94,7 @@ FLUXGYM_ROOT = Path(r"D:\GitHub\ai-ofm\fluxgym")
 ### 1. Запусти ComfyUI (в отдельном окне, оставь работать)
 
 ```powershell
-cd D:\GitHub\ai-ofm\ComfyUI
+cd D:\GitHub\OFM\ai-ofm\ComfyUI
 venv\Scripts\activate
 python main.py --use-sage-attention --fast --reserve-vram 0.5
 ```
