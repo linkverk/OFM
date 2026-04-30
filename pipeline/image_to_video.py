@@ -23,6 +23,7 @@ from config import (
 )
 from utils.comfy_client import ComfyClient
 from utils.workflow import load_workflow, fill_placeholders
+from utils.journal import run as journal_run
 
 
 DEFAULT_MOTION_NEGATIVE = (
@@ -83,67 +84,91 @@ def image_to_video(
     # Перед тяжёлой задачей — принудительная выгрузка
     client.free_memory(unload_models=True, free_memory=True)
 
-    # Если N=1 и bandit включён, всё равно сэмплируем arm для тренировки бандита
-    if use_quality and bandit is not None and n_per_final == 1:
+    journal_params = {
+        "base_seed": base_seed,
+        "frames": num_frames,
+        "width": WanSettings.width,
+        "height": WanSettings.height,
+        "use_quality": use_quality,
+        "n_per_final": n_per_final,
+        "blocks_to_swap": WanSettings.blocks_to_swap,
+        "image": image.name,
+    }
+
+    with journal_run(
+        "i2v",
+        params=journal_params,
+        prompt=motion_prompt,
+        tags=["wan22", "lightning"],
+    ) as _je:
+        # Если N=1 и bandit включён, всё равно сэмплируем arm для тренировки бандита
+        if use_quality and bandit is not None and n_per_final == 1:
+            rng = random.Random(base_seed)
+            arm_idx, arm_params = bandit.suggest("i2v", rng=rng)
+            steps_high = arm_params.get("steps_high", WanSettings.steps_high)
+            steps_low = arm_params.get("steps_low", WanSettings.steps_low)
+            files = _run_one(
+                client, wf_template, image_name, motion_prompt, neg,
+                num_frames, base_seed, steps_high, steps_low,
+                label=f"arm#{arm_idx}",
+            )
+            if files and scorer is not None:
+                score = scorer.score_video(files[0], motion_prompt)
+                if QualitySettings.log_scores:
+                    print(f"[i2v] {files[0].name} arm#{arm_idx} score={score:+.3f}")
+                bandit.record("i2v", arm_idx, score, extra={"prompt": motion_prompt[:80]})
+                _je.add_score(arm_idx, score)
+            _je.add_outputs(files)
+            return files
+
+        if not (use_quality and n_per_final > 1):
+            # Старое поведение
+            files = _run_one(
+                client, wf_template, image_name, motion_prompt, neg,
+                num_frames, base_seed,
+                WanSettings.steps_high, WanSettings.steps_low,
+            )
+            _je.add_outputs(files)
+            return files
+
+        # ---- Best-of-N путь (n_per_final > 1) ----
         rng = random.Random(base_seed)
-        arm_idx, arm_params = bandit.suggest("i2v", rng=rng)
-        steps_high = arm_params.get("steps_high", WanSettings.steps_high)
-        steps_low = arm_params.get("steps_low", WanSettings.steps_low)
-        files = _run_one(
-            client, wf_template, image_name, motion_prompt, neg,
-            num_frames, base_seed, steps_high, steps_low,
-            label=f"arm#{arm_idx}",
-        )
-        if files and scorer is not None:
-            score = scorer.score_video(files[0], motion_prompt)
-            if QualitySettings.log_scores:
-                print(f"[i2v] {files[0].name} arm#{arm_idx} score={score:+.3f}")
-            bandit.record("i2v", arm_idx, score, extra={"prompt": motion_prompt[:80]})
-        return files
+        candidates: list[tuple[Path, int]] = []  # (path, arm_idx)
+        print(f"[i2v] Best-of-{n_per_final} режим — это займёт ~{4*n_per_final}-{6*n_per_final} минут")
 
-    if not (use_quality and n_per_final > 1):
-        # Старое поведение
-        return _run_one(
-            client, wf_template, image_name, motion_prompt, neg,
-            num_frames, base_seed,
-            WanSettings.steps_high, WanSettings.steps_low,
-        )
+        for v in range(n_per_final):
+            arm_idx, arm_params = bandit.suggest("i2v", rng=rng)
+            steps_high = arm_params.get("steps_high", WanSettings.steps_high)
+            steps_low = arm_params.get("steps_low", WanSettings.steps_low)
+            seed_v = base_seed + v * 7919
+            print(f"[i2v] кандидат {v+1}/{n_per_final}: arm#{arm_idx} steps={steps_high}+{steps_low} seed={seed_v}")
+            files = _run_one(
+                client, wf_template, image_name, motion_prompt, neg,
+                num_frames, seed_v, steps_high, steps_low,
+                label=f"arm#{arm_idx}",
+            )
+            for f in files:
+                candidates.append((f, arm_idx))
+            if v < n_per_final - 1:
+                client.free_memory(unload_models=True, free_memory=True)
 
-    # ---- Best-of-N путь (n_per_final > 1) ----
-    rng = random.Random(base_seed)
-    candidates: list[tuple[Path, int]] = []  # (path, arm_idx)
-    print(f"[i2v] Best-of-{n_per_final} режим — это займёт ~{4*n_per_final}-{6*n_per_final} минут")
+        if not candidates:
+            return []
 
-    for v in range(n_per_final):
-        arm_idx, arm_params = bandit.suggest("i2v", rng=rng)
-        steps_high = arm_params.get("steps_high", WanSettings.steps_high)
-        steps_low = arm_params.get("steps_low", WanSettings.steps_low)
-        seed_v = base_seed + v * 7919
-        print(f"[i2v] кандидат {v+1}/{n_per_final}: arm#{arm_idx} steps={steps_high}+{steps_low} seed={seed_v}")
-        files = _run_one(
-            client, wf_template, image_name, motion_prompt, neg,
-            num_frames, seed_v, steps_high, steps_low,
-            label=f"arm#{arm_idx}",
-        )
-        for f in files:
-            candidates.append((f, arm_idx))
-        if v < n_per_final - 1:
-            client.free_memory(unload_models=True, free_memory=True)
+        scores = [scorer.score_video(p, motion_prompt) for p, _ in candidates]
+        if QualitySettings.log_scores:
+            for (path, arm), s in zip(candidates, scores):
+                tag = "★" if s == max(scores) else " "
+                print(f"  {tag} {path.name} arm#{arm} score={s:+.3f}")
 
-    if not candidates:
-        return []
+        for (_, arm_idx), s in zip(candidates, scores):
+            bandit.record("i2v", arm_idx, s, extra={"prompt": motion_prompt[:80]})
+            _je.add_score(arm_idx, s)
 
-    scores = [scorer.score_video(p, motion_prompt) for p, _ in candidates]
-    if QualitySettings.log_scores:
-        for (path, arm), s in zip(candidates, scores):
-            tag = "★" if s == max(scores) else " "
-            print(f"  {tag} {path.name} arm#{arm} score={s:+.3f}")
-
-    for (_, arm_idx), s in zip(candidates, scores):
-        bandit.record("i2v", arm_idx, s, extra={"prompt": motion_prompt[:80]})
-
-    best_i = max(range(len(scores)), key=lambda i: scores[i])
-    return [candidates[best_i][0]]
+        best_i = max(range(len(scores)), key=lambda i: scores[i])
+        winner = [candidates[best_i][0]]
+        _je.add_outputs(winner)
+        return winner
 
 
 def _run_one(

@@ -23,6 +23,7 @@ from config import (
 )
 from utils.comfy_client import ComfyClient
 from utils.workflow import load_workflow, fill_placeholders
+from utils.journal import run as journal_run
 
 
 DEFAULT_NEGATIVE = (
@@ -98,74 +99,95 @@ def generate_character(
     final_results: list[Path] = []
     rng = random.Random(base_seed)
 
-    # Если Best-of-N выключен — старое поведение: count прогонов с фикс. параметрами.
-    if not use_quality:
-        for i in range(count):
-            values = _build_values(
-                face_name, full_prompt, neg,
-                steps=FluxSettings.steps, guidance=FluxSettings.guidance,
-                seed=base_seed + i * 7919,
-            )
-            wf = fill_placeholders(wf_template, values)
-            print(f"[character] вариант {i+1}/{count} (seed={values['SEED']})")
-            files = client.run_workflow(
-                wf, progress_callback=lambda v, m: print(f"  {v}/{m}", end="\r"),
-            )
-            final_results.extend(files)
-            print(f"  готово: {[f.name for f in files]}")
-            if i < count - 1:
+    journal_params = {
+        "count": count,
+        "base_seed": base_seed,
+        "use_quality": use_quality,
+        "n_per_final": n_per_final if use_quality else 1,
+        "width": FluxSettings.width,
+        "height": FluxSettings.height,
+        "steps": FluxSettings.steps,
+        "guidance": FluxSettings.guidance,
+        "face_ref": face_ref.name,
+    }
+
+    with journal_run(
+        "character",
+        params=journal_params,
+        prompt=prompt,
+        tags=["flux", "pulid"],
+    ) as _je:
+        # Если Best-of-N выключен — старое поведение: count прогонов с фикс. параметрами.
+        if not use_quality:
+            for i in range(count):
+                values = _build_values(
+                    face_name, full_prompt, neg,
+                    steps=FluxSettings.steps, guidance=FluxSettings.guidance,
+                    seed=base_seed + i * 7919,
+                )
+                wf = fill_placeholders(wf_template, values)
+                print(f"[character] вариант {i+1}/{count} (seed={values['SEED']})")
+                files = client.run_workflow(
+                    wf, progress_callback=lambda v, m: print(f"  {v}/{m}", end="\r"),
+                )
+                final_results.extend(files)
+                print(f"  готово: {[f.name for f in files]}")
+                if i < count - 1:
+                    client.free_memory(unload_models=False, free_memory=True)
+            _je.add_outputs(final_results)
+            return final_results
+
+        # ---- Best-of-N путь ----
+        for slot in range(count):
+            candidates: list[tuple[Path, int, dict]] = []  # (path, arm_idx, params)
+            print(f"[character] слот {slot+1}/{count} — генерирую {n_per_final} кандидатов")
+
+            for v in range(n_per_final):
+                arm_idx, arm_params = bandit.suggest("character", rng=rng)
+                steps = arm_params.get("steps", FluxSettings.steps)
+                guidance = arm_params.get("guidance", FluxSettings.guidance)
+                values = _build_values(
+                    face_name, full_prompt, neg,
+                    steps=steps, guidance=guidance,
+                    seed=base_seed + (slot * 1000 + v) * 7919,
+                )
+                wf = fill_placeholders(wf_template, values)
+                print(f"  кандидат {v+1}/{n_per_final}: arm#{arm_idx} steps={steps} g={guidance} seed={values['SEED']}")
+                files = client.run_workflow(
+                    wf, progress_callback=lambda val, m: print(f"    {val}/{m}", end="\r"),
+                )
+                for f in files:
+                    candidates.append((f, arm_idx, arm_params))
+                if v < n_per_final - 1:
+                    client.free_memory(unload_models=False, free_memory=True)
+
+            if not candidates:
+                continue
+
+            # Скорим всех кандидатов и обновляем bandit
+            scores = []
+            for path, _, _ in candidates:
+                s = scorer.score_image(path, prompt)
+                scores.append(s)
+
+            if QualitySettings.log_scores:
+                for (path, arm, _), s in zip(candidates, scores):
+                    tag = "★" if s == max(scores) else " "
+                    print(f"  {tag} {path.name} arm#{arm} score={s:+.3f}")
+
+            # Записываем результаты в bandit (каждый arm получает свой score)
+            for (_, arm_idx, _), s in zip(candidates, scores):
+                bandit.record("character", arm_idx, s, extra={"prompt": prompt[:80]})
+                _je.add_score(arm_idx, s)
+
+            best_i = max(range(len(scores)), key=lambda i: scores[i])
+            final_results.append(candidates[best_i][0])
+
+            if slot < count - 1:
                 client.free_memory(unload_models=False, free_memory=True)
+
+        _je.add_outputs(final_results)
         return final_results
-
-    # ---- Best-of-N путь ----
-    for slot in range(count):
-        candidates: list[tuple[Path, int, dict]] = []  # (path, arm_idx, params)
-        print(f"[character] слот {slot+1}/{count} — генерирую {n_per_final} кандидатов")
-
-        for v in range(n_per_final):
-            arm_idx, arm_params = bandit.suggest("character", rng=rng)
-            steps = arm_params.get("steps", FluxSettings.steps)
-            guidance = arm_params.get("guidance", FluxSettings.guidance)
-            values = _build_values(
-                face_name, full_prompt, neg,
-                steps=steps, guidance=guidance,
-                seed=base_seed + (slot * 1000 + v) * 7919,
-            )
-            wf = fill_placeholders(wf_template, values)
-            print(f"  кандидат {v+1}/{n_per_final}: arm#{arm_idx} steps={steps} g={guidance} seed={values['SEED']}")
-            files = client.run_workflow(
-                wf, progress_callback=lambda val, m: print(f"    {val}/{m}", end="\r"),
-            )
-            for f in files:
-                candidates.append((f, arm_idx, arm_params))
-            if v < n_per_final - 1:
-                client.free_memory(unload_models=False, free_memory=True)
-
-        if not candidates:
-            continue
-
-        # Скорим всех кандидатов и обновляем bandit
-        scores = []
-        for path, _, _ in candidates:
-            s = scorer.score_image(path, prompt)
-            scores.append(s)
-
-        if QualitySettings.log_scores:
-            for (path, arm, _), s in zip(candidates, scores):
-                tag = "★" if s == max(scores) else " "
-                print(f"  {tag} {path.name} arm#{arm} score={s:+.3f}")
-
-        # Записываем результаты в bandit (каждый arm получает свой score)
-        for (_, arm_idx, _), s in zip(candidates, scores):
-            bandit.record("character", arm_idx, s, extra={"prompt": prompt[:80]})
-
-        best_i = max(range(len(scores)), key=lambda i: scores[i])
-        final_results.append(candidates[best_i][0])
-
-        if slot < count - 1:
-            client.free_memory(unload_models=False, free_memory=True)
-
-    return final_results
 
 
 def _build_values(

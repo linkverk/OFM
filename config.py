@@ -210,6 +210,19 @@ class QualitySettings:
     scorer_device = "cpu"       # cpu чтобы не отжирать VRAM у ComfyUI; можно "cuda" если есть запас
     log_scores = True           # печатать скоры всех вариантов
 
+class JournalSettings:
+    """
+    Журнал прогонов в markdown для Obsidian. Пишет одну заметку на каждый
+    прогон в journal/YYYY-MM-DD/HH-MM-SS-<stage>.md с frontmatter
+    (type/status/tags/updated) и embed-ссылками `![[output/...]]`.
+    Корень репозитория можно открыть как Obsidian vault.
+    """
+    enabled = True
+    verbose = False             # печатать путь к каждой записи
+    # Скоры best-of-N кандидатов записывать в журнал
+    log_candidate_scores = True
+
+
 class BanditArms:
     """
     Дискретные конфигурации параметров под каждую стадию.

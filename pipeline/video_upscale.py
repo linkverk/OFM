@@ -14,6 +14,7 @@ from config import (
 )
 from utils.comfy_client import ComfyClient
 from utils.workflow import load_workflow, fill_placeholders
+from utils.journal import run as journal_run
 
 
 def _copy_video_to_comfy_input(video: Path) -> str:
@@ -62,9 +63,19 @@ def upscale_video(
     print(f"[upscale] ожидаемое время на 4070S: 3-5 минут...")
 
     client.free_memory(unload_models=True, free_memory=True)
-    files = client.run_workflow(
-        wf,
-        progress_callback=lambda v, m: print(f"  кадр {v}/{m}", end="\r"),
-    )
-    print(f"\n[upscale] готово: {[f.name for f in files]}")
-    return files
+
+    journal_params = {
+        "input_video": video.name,
+        "target_resolution": target_resolution,
+        "batch_size": SeedVR2Settings.batch_size,
+        "blocks_to_swap": SeedVR2Settings.blocks_to_swap,
+        "seed": used_seed,
+    }
+    with journal_run("upscale", params=journal_params, tags=["seedvr2"]) as _je:
+        files = client.run_workflow(
+            wf,
+            progress_callback=lambda v, m: print(f"  кадр {v}/{m}", end="\r"),
+        )
+        print(f"\n[upscale] готово: {[f.name for f in files]}")
+        _je.add_outputs(files)
+        return files

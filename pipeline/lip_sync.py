@@ -21,6 +21,7 @@ from config import (
 )
 from utils.comfy_client import ComfyClient
 from utils.workflow import load_workflow, fill_placeholders
+from utils.journal import run as journal_run
 
 
 def _copy_to_comfy_input(file: Path, subfolder: str = "ai_ofm") -> str:
@@ -105,9 +106,20 @@ def lip_sync(
     print(f"[lipsync] ожидаемое время на 4070S: ~2-4 мин на 10 сек видео")
 
     client.free_memory(unload_models=True, free_memory=True)
-    files = client.run_workflow(
-        wf,
-        progress_callback=lambda v, m: print(f"  {v}/{m}", end="\r"),
-    )
-    print(f"\n[lipsync] готово: {[f.name for f in files]}")
-    return files
+
+    journal_params = {
+        "input_video": video.name,
+        "input_audio": audio.name,
+        "seed": used_seed,
+        "steps": used_steps,
+        "lips_expression": used_expr,
+        "guidance": LatentSyncSettings.guidance_scale,
+    }
+    with journal_run("lipsync", params=journal_params, tags=["latentsync"]) as _je:
+        files = client.run_workflow(
+            wf,
+            progress_callback=lambda v, m: print(f"  {v}/{m}", end="\r"),
+        )
+        print(f"\n[lipsync] готово: {[f.name for f in files]}")
+        _je.add_outputs(files)
+        return files

@@ -23,6 +23,7 @@ from config import (
 )
 from utils.comfy_client import ComfyClient
 from utils.workflow import load_workflow, fill_placeholders
+from utils.journal import run as journal_run
 
 
 # Примеры edit-промптов (подсказка в docstring):
@@ -64,31 +65,48 @@ def edit_character(
     wf_template = load_workflow(WORKFLOWS_DIR / "flux_kontext.json")
     results: list[Path] = []
 
-    for i in range(count):
-        values = {
-            "KONTEXT_UNET": FLUX_KONTEXT_GGUF,
-            "CLIP_L": FLUX_CLIP_L,
-            "T5": FLUX_T5,
-            "VAE": FLUX_VAE,
-            "REF_IMAGE": ref_name,
-            "EDIT_PROMPT": edit_prompt,
-            "WIDTH": w,
-            "HEIGHT": h,
-            "STEPS": FluxKontextSettings.steps,
-            "GUIDANCE": FluxKontextSettings.guidance,
-            "SEED": base_seed + i * 7919,
-        }
-        wf = fill_placeholders(wf_template, values)
+    journal_params = {
+        "count": count,
+        "base_seed": base_seed,
+        "width": w,
+        "height": h,
+        "steps": FluxKontextSettings.steps,
+        "guidance": FluxKontextSettings.guidance,
+        "ref_image": reference_image.name,
+    }
 
-        print(f"[kontext] {i+1}/{count} '{edit_prompt[:60]}...' (seed={values['SEED']})")
-        files = client.run_workflow(
-            wf,
-            progress_callback=lambda v, m: print(f"  {v}/{m}", end="\r"),
-        )
-        results.extend(files)
-        print(f"  готово: {[f.name for f in files]}")
+    with journal_run(
+        "kontext",
+        params=journal_params,
+        prompt=edit_prompt,
+        tags=["flux", "kontext"],
+    ) as _je:
+        for i in range(count):
+            values = {
+                "KONTEXT_UNET": FLUX_KONTEXT_GGUF,
+                "CLIP_L": FLUX_CLIP_L,
+                "T5": FLUX_T5,
+                "VAE": FLUX_VAE,
+                "REF_IMAGE": ref_name,
+                "EDIT_PROMPT": edit_prompt,
+                "WIDTH": w,
+                "HEIGHT": h,
+                "STEPS": FluxKontextSettings.steps,
+                "GUIDANCE": FluxKontextSettings.guidance,
+                "SEED": base_seed + i * 7919,
+            }
+            wf = fill_placeholders(wf_template, values)
 
-        if i < count - 1:
-            client.free_memory(unload_models=False, free_memory=True)
+            print(f"[kontext] {i+1}/{count} '{edit_prompt[:60]}...' (seed={values['SEED']})")
+            files = client.run_workflow(
+                wf,
+                progress_callback=lambda v, m: print(f"  {v}/{m}", end="\r"),
+            )
+            results.extend(files)
+            print(f"  готово: {[f.name for f in files]}")
 
-    return results
+            if i < count - 1:
+                client.free_memory(unload_models=False, free_memory=True)
+
+        _je.add_outputs(results)
+        return results
