@@ -26,6 +26,7 @@ from config import (
     OUTPUT_DIR,
     F5Settings,
 )
+from utils.journal import run as journal_run
 
 
 def _ensure_ruaccent():
@@ -118,64 +119,75 @@ def synthesize(
     spd = speed if speed is not None else F5Settings.speed
     ckpt = Path(ckpt_path) if ckpt_path else F5Settings.ckpt_path
 
-    # F5-TTS пишет в временную папку `output_dir`, не туда куда нужно —
-    # поэтому даём ему temp и потом сами переносим. Имя файла фиксированное.
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_dir = Path(tmp)
-        output_name = "f5tts_out.wav"
+    journal_params = {
+        "ref_audio": reference_audio.name,
+        "nfe_step": nfe,
+        "speed": spd,
+        "use_ruaccent": do_accent,
+        "model": F5Settings.model_name,
+        "text_chars": len(text),
+    }
 
-        cli = _find_f5_tts_cli()
-        # команда собирается строкой — многословные аргументы (`reference_text`, `synth_text`)
-        # безопаснее прокидывать через список
-        cmd = cli.split() + [
-            "--model", F5Settings.model_name,
-            "--ckpt_file", str(ckpt),
-            "--vocab_file", str(F5Settings.vocab_path),
-            "--ref_audio", str(reference_audio),
-            "--ref_text", ref_text_prepared,
-            "--gen_text", synth_text,
-            "--output_dir", str(tmp_dir),
-            "--output_file", output_name,
-            "--nfe_step", str(nfe),
-            "--cfg_strength", str(F5Settings.cfg_strength),
-            "--speed", str(spd),
-            "--cross_fade_duration", str(F5Settings.cross_fade_duration),
-        ]
-        if F5Settings.remove_silence:
-            cmd.append("--remove_silence")
+    with journal_run("tts", params=journal_params, prompt=text, tags=["f5-tts", "ru"]) as _je:
+        # F5-TTS пишет в временную папку `output_dir`, не туда куда нужно —
+        # поэтому даём ему temp и потом сами переносим. Имя файла фиксированное.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_dir = Path(tmp)
+            output_name = "f5tts_out.wav"
 
-        print(f"[tts] F5-TTS синтез ({len(text)} символов)...")
-        print(f"[tts] текст с ударениями: {synth_text[:120]}{'...' if len(synth_text) > 120 else ''}")
+            cli = _find_f5_tts_cli()
+            # команда собирается строкой — многословные аргументы (`reference_text`, `synth_text`)
+            # безопаснее прокидывать через список
+            cmd = cli.split() + [
+                "--model", F5Settings.model_name,
+                "--ckpt_file", str(ckpt),
+                "--vocab_file", str(F5Settings.vocab_path),
+                "--ref_audio", str(reference_audio),
+                "--ref_text", ref_text_prepared,
+                "--gen_text", synth_text,
+                "--output_dir", str(tmp_dir),
+                "--output_file", output_name,
+                "--nfe_step", str(nfe),
+                "--cfg_strength", str(F5Settings.cfg_strength),
+                "--speed", str(spd),
+                "--cross_fade_duration", str(F5Settings.cross_fade_duration),
+            ]
+            if F5Settings.remove_silence:
+                cmd.append("--remove_silence")
 
-        try:
-            result = subprocess.run(
-                cmd,
-                cwd=str(F5_TTS_ROOT) if F5_TTS_ROOT.exists() else None,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=600,
-            )
-        except FileNotFoundError:
-            raise RuntimeError(
-                "F5-TTS не установлен. Ставь: git clone https://github.com/SWivid/F5-TTS "
-                "&& cd F5-TTS && pip install -e ."
-            )
+            print(f"[tts] F5-TTS синтез ({len(text)} символов)...")
+            print(f"[tts] текст с ударениями: {synth_text[:120]}{'...' if len(synth_text) > 120 else ''}")
 
-        if result.returncode != 0:
-            print("[tts] STDERR:\n" + (result.stderr or "")[-2000:])
-            raise RuntimeError(f"F5-TTS упал (код {result.returncode})")
+            try:
+                result = subprocess.run(
+                    cmd,
+                    cwd=str(F5_TTS_ROOT) if F5_TTS_ROOT.exists() else None,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=600,
+                )
+            except FileNotFoundError:
+                raise RuntimeError(
+                    "F5-TTS не установлен. Ставь: git clone https://github.com/SWivid/F5-TTS "
+                    "&& cd F5-TTS && pip install -e ."
+                )
 
-        src = tmp_dir / output_name
-        if not src.exists():
-            # fallback: ищем любой wav в tmp
-            wavs = list(tmp_dir.glob("*.wav"))
-            if not wavs:
-                raise RuntimeError(f"F5-TTS не создал WAV в {tmp_dir}")
-            src = wavs[0]
+            if result.returncode != 0:
+                print("[tts] STDERR:\n" + (result.stderr or "")[-2000:])
+                raise RuntimeError(f"F5-TTS упал (код {result.returncode})")
 
-        shutil.copy2(src, output_path)
+            src = tmp_dir / output_name
+            if not src.exists():
+                # fallback: ищем любой wav в tmp
+                wavs = list(tmp_dir.glob("*.wav"))
+                if not wavs:
+                    raise RuntimeError(f"F5-TTS не создал WAV в {tmp_dir}")
+                src = wavs[0]
 
-    print(f"[tts] готово: {output_path}")
-    return output_path
+            shutil.copy2(src, output_path)
+
+        print(f"[tts] готово: {output_path}")
+        _je.add_outputs([output_path])
+        return output_path

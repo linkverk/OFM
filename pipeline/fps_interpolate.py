@@ -17,6 +17,7 @@ from config import (
 )
 from utils.comfy_client import ComfyClient
 from utils.workflow import load_workflow, fill_placeholders
+from utils.journal import run as journal_run
 
 
 def _copy_to_comfy_input(file: Path, subfolder: str = "ai_ofm") -> str:
@@ -67,9 +68,16 @@ def interpolate_fps(
     print(f"[rife] интерполяция x{mult}, output fps={output_fps}")
     print(f"[rife] ожидаемое время: 10-30 сек на 5-секундный клип")
 
-    files = client.run_workflow(
-        wf,
-        progress_callback=lambda v, m: print(f"  {v}/{m}", end="\r"),
-    )
-    print(f"\n[rife] готово: {[f.name for f in files]}")
-    return files
+    journal_params = {
+        "input_video": video.name,
+        "multiplier": mult,
+        "output_fps": output_fps,
+    }
+    with journal_run("rife", params=journal_params, tags=["rife", "fps"]) as _je:
+        files = client.run_workflow(
+            wf,
+            progress_callback=lambda v, m: print(f"  {v}/{m}", end="\r"),
+        )
+        print(f"\n[rife] готово: {[f.name for f in files]}")
+        _je.add_outputs(files)
+        return files

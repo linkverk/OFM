@@ -23,6 +23,7 @@ from config import (
     OUTPUT_DIR,
     RVCSettings,
 )
+from utils.journal import run as journal_run
 
 
 def _find_rvc_cli() -> list[str]:
@@ -106,25 +107,37 @@ def convert(
     ]
 
     print(f"[rvc] конверсия {input_wav.name} → {output_path.name}, pitch={pitch_val}")
-    try:
-        result = subprocess.run(
-            cmd,
-            cwd=str(RVC_ROOT),
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=600,
-        )
-    except FileNotFoundError as e:
-        raise RuntimeError(f"Не удалось запустить RVC: {e}")
 
-    if result.returncode != 0:
-        print("[rvc] STDERR:\n" + (result.stderr or "")[-2000:])
-        raise RuntimeError(f"RVC упал (код {result.returncode})")
+    journal_params = {
+        "input_wav": input_wav.name,
+        "model": Path(model).name,
+        "pitch": pitch_val,
+        "f0_method": RVCSettings.f0_method,
+        "index_rate": RVCSettings.index_rate,
+        "protect": RVCSettings.protect,
+    }
 
-    if not output_path.exists():
-        raise RuntimeError(f"RVC не создал файл: {output_path}")
+    with journal_run("rvc", params=journal_params, tags=["rvc", "voice"]) as _je:
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=str(RVC_ROOT),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=600,
+            )
+        except FileNotFoundError as e:
+            raise RuntimeError(f"Не удалось запустить RVC: {e}")
 
-    print(f"[rvc] готово: {output_path}")
-    return output_path
+        if result.returncode != 0:
+            print("[rvc] STDERR:\n" + (result.stderr or "")[-2000:])
+            raise RuntimeError(f"RVC упал (код {result.returncode})")
+
+        if not output_path.exists():
+            raise RuntimeError(f"RVC не создал файл: {output_path}")
+
+        print(f"[rvc] готово: {output_path}")
+        _je.add_outputs([output_path])
+        return output_path
